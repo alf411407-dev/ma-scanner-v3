@@ -11,10 +11,11 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 from telegram.constants import ParseMode
 
-TOKEN = os.getenv("TELEGRAM_TOKEN")
-CHAT_ID = os.getenv("CHAT_ID", "")  # isi chat id lu buat auto notif, atau kosongin dulu
+TOKEN = os.getenv("TELEGRAM_TOKEN") or os.getenv("BOT_TOKEN")
+CHAT_ID = os.getenv("CHAT_ID", "") or os.getenv("CHATID", "")  # isi chat id lu buat auto notif, atau kosongin dulu
 if not TOKEN:
-    raise ValueError("TELEGRAM_TOKEN belum di set!")
+    print("ENV VARS:", list(os.environ.keys()))
+    raise ValueError("TELEGRAM_TOKEN / BOT_TOKEN belum di set! Set salah satu di Railway Variables!")
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
