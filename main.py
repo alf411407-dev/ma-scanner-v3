@@ -112,7 +112,6 @@ def predict_next(df):
         vol_ratio=vol_now/vol_ma if vol_ma>0 else 1
         curr_close=float(close.iloc[-1])
         prev_close=float(close.iloc[-2])
-        # Trend naik 2 hari berturut?
         naik_2hari = curr_close > prev_close and prev_close > float(close.iloc[-3])
 
         score=50; reasons=[]
@@ -186,22 +185,14 @@ def analyze_pasti(symbol, min_price=50):
         pred,score,reasons,vol_ratio,rsi,curr_close=predict_next(df)
         if curr_close < min_price: return None
         if "NAIK" not in pred: return None
-
-        # FILTER PASTI - SUPER KETAT
-        # 1. Score minimal 80%
         if score < 80: return None
-        # 2. Volume minimal 1.5x rame (gak mau sepi kayak IOTF 0.2x)
         if vol_ratio < 1.5: return None
-        # 3. RSI ideal 50-68 (gak overbought)
         if not (50 <= rsi <= 68): return None
-        # 4. Harus bullish atau baru cross up
         df_flat=flatten_df(df.copy())
         close=pd.Series(df_flat['Close']).dropna()
         ema5=calc_ema(close,5).iloc[-1]; ema10=calc_ema(close,10).iloc[-1]; ema20=calc_ema(close,20).iloc[-1]
-        if not (ema5>ema10): return None  # minimal EMA5 di atas EMA10
-        # 5. Close di atas EMA5 (kuat)
+        if not (ema5>ema10): return None
         if curr_close < ema5: return None
-
         return {'symbol':final_sym.replace('.JK',''), 'close':curr_close, 'rsi':rsi, 'pred':pred, 'score':score, 'vol':vol_ratio, 'reasons':reasons[:2]}
     except: return None
 
@@ -226,7 +217,6 @@ def auto_notif_loop():
                     except: pass
                 LAST_PAGI_DATE=today_str
             if now.hour==15 and now.minute in [30,31] and LAST_NOTIF_DATE!=today_str and len(CHAT_IDS)>0:
-                # sore tetap kasih yang pasti juga
                 results=[r for r in [analyze_pasti(s) for s in WATCHLIST[:60]] if r]
                 results=sorted(results,key=lambda x:x['score'],reverse=True)[:5]
                 if results:
@@ -308,7 +298,6 @@ def handle_scan(message):
         except Exception as e:
             bot.edit_message_text(f"Error: {e}"[:400],loading.chat.id,loading.message_id)
     else:
-        # scan longgar 70%+
         loading=bot.reply_to(message,f"🔍 V15 Scanning 60 saham >{min_price} 70%+...")
         try:
             results=[]
