@@ -113,7 +113,6 @@ def predict_next(df):
         curr_close=float(close.iloc[-1])
         prev_close=float(close.iloc[-2])
         naik_2hari = curr_close > prev_close and prev_close > float(close.iloc[-3])
-
         score=50; reasons=[]
         if e5>e10>e20: score+=20; reasons.append(f"EMA5>EMA10>EMA20 BULLISH +20%")
         elif e5<e10<e20: score-=20; reasons.append(f"BEARISH -20%")
@@ -130,7 +129,6 @@ def predict_next(df):
         elif vol_ratio<0.5: score-=10; reasons.append(f"Volume sepi {vol_ratio:.1f}x -10%")
         if naik_2hari: score+=5; reasons.append(f"Naik 2 hari berturut +5%")
         if curr_close > e5: score+=5; reasons.append(f"Close di atas EMA5 +5%")
-
         pred="NAIK" if score>=65 else "TURUN" if score<=40 else "SIDEWAYS"
         return pred, score, reasons, vol_ratio, rsi, curr_close
     except Exception as e:
@@ -277,7 +275,6 @@ def handle_scan(message):
         if a.isdigit():
             try: min_price=int(a); break
             except: pass
-
     if pasti_mode:
         loading=bot.reply_to(message,f"🔍 V15 PASTI Scanning 60 saham >{min_price} hanya 80%+ Vol>1.5x...")
         try:
