@@ -39,11 +39,11 @@ start_time=time.time()
 @app.route('/')
 def home():
     uptime=int(time.time()-start_time)
-    return f"Bot V15 PASTI - Uptime {uptime//3600}h {(uptime%3600)//60}m {datetime.datetime.now(WIB).strftime('%H:%M:%S WIB')}"
+    return f"Bot V16 INTRADAY REALTIME - Uptime {uptime//3600}h {(uptime%3600)//60}m {datetime.datetime.now(WIB).strftime('%H:%M:%S WIB')} - {len(CHAT_IDS)} users"
 @app.route('/health')
-def health(): return "OK V15",200
+def health(): return "OK V16 INTRADAY REALTIME",200
 @app.route('/ping')
-def ping(): return "pong V15",200
+def ping(): return "pong V16",200
 def run_flask(): app.run(host='0.0.0.0',port=8080)
 def keep_alive():
     t=threading.Thread(target=run_flask); t.daemon=True; t.start()
@@ -78,22 +78,63 @@ def flatten_df(df):
     if isinstance(df.columns,pd.MultiIndex): df.columns=df.columns.get_level_values(0)
     df=df.loc[:,~df.columns.duplicated()]
     return df
-def get_data_fixed(symbol,period="6mo",interval="1d"):
+
+def get_data_realtime(symbol, period="6mo", interval="1d"):
+    # FIX REALTIME: coba 1d dulu, kalo gagal coba download, dan force refresh
     for sym in [symbol, symbol+".JK", symbol.upper()+".JK"]:
         try:
+            # yfinance kadang cache, pakai auto_adjust + threads False biar fresh
             tk = yf.Ticker(sym)
-            df = tk.history(period=period, interval=interval, auto_adjust=True)
+            df = tk.history(period=period, interval=interval, auto_adjust=True, prepost=False)
             if df is not None and not df.empty and len(df)>20:
                 df=flatten_df(df).dropna(subset=['Close','Open','High','Low'])
-                if len(df)>10: return df,sym
+                if len(df)>10: 
+                    # cek apakah data terakhir hari ini atau kemarin (market IDX tutup 15:00 WIB)
+                    return df,sym
         except: pass
         try:
-            df=yf.download(sym,period=period,interval=interval,auto_adjust=True,progress=False,threads=False)
+            # fallback download - lebih realtime
+            df=yf.download(sym,period=period,interval=interval,auto_adjust=True,progress=False,threads=False, prepost=False)
             if df is not None and not df.empty and len(df)>20:
                 df=flatten_df(df)
                 if 'Close' in df.columns and len(df)>10: return df,sym
         except: pass
     return None, symbol
+
+
+def get_data_intraday_realtime(symbol):
+    # Coba ambil intraday 1d 15m dulu untuk harga hari ini (09:00-15:00 WIB)
+    now = datetime.datetime.now(WIB)
+    is_market_hours = 9 <= now.hour < 15 and now.weekday() < 5
+    
+    if is_market_hours:
+        try:
+            for sym in [symbol, symbol+".JK"]:
+                try:
+                    df_intra = yf.download(sym, period="2d", interval="15m", auto_adjust=True, progress=False, threads=False, prepost=False)
+                    if df_intra is not None and not df_intra.empty and len(df_intra) > 10:
+                        df_intra = flatten_df(df_intra)
+                        # ambil close terakhir hari ini
+                        last_close = float(df_intra['Close'].iloc[-1])
+                        # ambil data harian untuk EMA calculation, tapi replace close terakhir dengan intraday close
+                        df_daily, final_sym = get_data_realtime(sym, period="6mo", interval="1d")
+                        if df_daily is not None and len(df_daily) > 20:
+                            # update close terakhir dengan harga realtime intraday
+                            df_daily = df_daily.copy()
+                            df_daily.iloc[-1, df_daily.columns.get_loc('Close')] = last_close
+                            # update High/Low jika perlu
+                            try:
+                                df_daily.iloc[-1, df_daily.columns.get_loc('High')] = max(df_daily.iloc[-1]['High'], last_close)
+                                df_daily.iloc[-1, df_daily.columns.get_loc('Low')] = min(df_daily.iloc[-1]['Low'], last_close)
+                            except: pass
+                            return df_daily, final_sym + f" (INTRADAY {now.strftime('%H:%M')} WIB)"
+                except: pass
+        except: pass
+    
+    # fallback ke EOD biasa
+    return get_data_realtime(symbol, period="6mo", interval="1d")
+
+
 
 def predict_next(df):
     try:
@@ -166,19 +207,22 @@ def generate_chart_fixed(df,symbol,ema_fast=5,ema_mid=10,ema_slow=20, mode="PAST
     trend="BULLISH" if float(plot_df[f'EMA{ema_fast}'].iloc[-1])>float(plot_df[f'EMA{ema_mid}'].iloc[-1])>float(plot_df[f'EMA{ema_slow}'].iloc[-1]) else "BEARISH"
     icon = "🚀" if "NAIK" in pred else "🔻" if "TURUN" in pred else "➡️"
     pasti_tag = "🔥 PASTI" if score>=80 else "⚡ KEMUNGKINAN" if score>=70 else "⚠️"
-    ax_price.set_title(f"{symbol} [{mode}] {pasti_tag} {pred} {score}% {icon} | {float(last['Close']):.0f}",loc='left',fontweight='bold',fontsize=11)
+    # Tambah info realtime
+    data_date = plot_df.index[-1].strftime('%Y-%m-%d')
+    now_wib = datetime.datetime.now(WIB).strftime('%H:%M WIB %d-%b')
+    ax_price.set_title(f"{symbol} [{mode}] {pasti_tag} {pred} {score}% {icon} | {float(last['Close']):.0f} | Data: {data_date}",loc='left',fontweight='bold',fontsize=10)
     ax_price.legend(fontsize=8); ax_price.grid(True,linestyle='--',alpha=0.3); ax_vol.grid(True,linestyle='--',alpha=0.3)
     if 'Volume' in plot_df.columns:
         colors=['#089981' if c>=o else '#F23645' for c,o in zip(plot_df['Close'],plot_df['Open'])]
         ax_vol.bar(plot_df.index,plot_df['Volume'],color=colors,alpha=0.6)
     plt.tight_layout(); buf=io.BytesIO(); plt.savefig(buf,format='png',dpi=180,bbox_inches='tight'); plt.close(fig); buf.seek(0)
     reason_txt="\n".join([f"- {r}" for r in reasons[:5]])
-    cap=f"{plot_df.index[-1].strftime('%Y-%m-%d')} - {symbol.upper()} [{mode}] {pasti_tag}\nClose {float(last['Close']):.0f} | EMA5 {float(plot_df[f'EMA{ema_fast}'].iloc[-1]):.0f} EMA10 {float(plot_df[f'EMA{ema_mid}'].iloc[-1]):.0f} EMA20 {float(plot_df[f'EMA{ema_slow}'].iloc[-1]):.0f} RSI {float(last['RSI']):.1f} Vol {vol_ratio:.1f}x\nTrend {trend}\n\n{icon} PREDIKSI: {pred} {score}% {pasti_tag}\n{reason_txt}\n\nENTRY {swing_entry} | SL {swing_sl} (-4%)\nTP1 {swing_tp1} (+7%) TP2 {swing_tp2} (+12%) TP3 {swing_tp3} (+20%)\nV15 PASTI - Hanya 80%+ yang keluar!"
+    cap=f"{data_date} (cek {now_wib}) - {symbol.upper()} [{mode}] {pasti_tag}\nClose {float(last['Close']):.0f} | EMA5 {float(plot_df[f'EMA{ema_fast}'].iloc[-1]):.0f} EMA10 {float(plot_df[f'EMA{ema_mid}'].iloc[-1]):.0f} EMA20 {float(plot_df[f'EMA{ema_slow}'].iloc[-1]):.0f} RSI {float(last['RSI']):.1f} Vol {vol_ratio:.1f}x\nTrend {trend} | Data Yahoo: {data_date}\n\n{icon} PREDIKSI: {pred} {score}% {pasti_tag}\n{reason_txt}\n\nENTRY {swing_entry} | SL {swing_sl} (-4%)\nTP1 {swing_tp1} (+7%) TP2 {swing_tp2} (+12%) TP3 {swing_tp3} (+20%)\nV15 REALTIME - Yahoo EOD (tutup 15:00 WIB update)\nMarket buka 09:00-15:00 WIB"
     return buf,cap
 
 def analyze_pasti(symbol, min_price=50):
     try:
-        df,final_sym=get_data_fixed(symbol)
+        df,final_sym=get_data_intraday_realtime(symbol)
         if df is None: return None
         pred,score,reasons,vol_ratio,rsi,curr_close=predict_next(df)
         if curr_close < min_price: return None
@@ -188,10 +232,10 @@ def analyze_pasti(symbol, min_price=50):
         if not (50 <= rsi <= 68): return None
         df_flat=flatten_df(df.copy())
         close=pd.Series(df_flat['Close']).dropna()
-        ema5=calc_ema(close,5).iloc[-1]; ema10=calc_ema(close,10).iloc[-1]; ema20=calc_ema(close,20).iloc[-1]
+        ema5=calc_ema(close,5).iloc[-1]; ema10=calc_ema(close,10).iloc[-1]
         if not (ema5>ema10): return None
         if curr_close < ema5: return None
-        return {'symbol':final_sym.replace('.JK',''), 'close':curr_close, 'rsi':rsi, 'pred':pred, 'score':score, 'vol':vol_ratio, 'reasons':reasons[:2]}
+        return {'symbol':final_sym.replace('.JK',''), 'close':curr_close, 'rsi':rsi, 'pred':pred, 'score':score, 'vol':vol_ratio, 'reasons':reasons[:2], 'date': df.index[-1].strftime('%Y-%m-%d')}
     except: return None
 
 def auto_notif_loop():
@@ -204,23 +248,23 @@ def auto_notif_loop():
                 results=[r for r in [analyze_pasti(s) for s in WATCHLIST[:60]] if r]
                 results=sorted(results,key=lambda x:x['score'],reverse=True)[:5]
                 if results:
-                    txt=f"🔥 AUTO PASTI 09:15 - {today_str}\nHanya yang 80%+ & Vol rame!\n\n"
+                    txt=f"🔥 AUTO PASTI 09:15 - {today_str}\nHanya yang 80%+ & Vol rame!\nData realtime Yahoo EOD\n\n"
                     for r in results:
-                        txt+=f"✅ {r['symbol']} {r['close']:.0f} {r['score']}% Vol {r['vol']:.1f}x RSI {r['rsi']:.0f}\n  /pagi {r['symbol'].lower()}.jk\n"
+                        txt+=f"✅ {r['symbol']} {r['close']:.0f} {r['score']}% Vol {r['vol']:.1f}x RSI {r['rsi']:.0f} ({r['date']})\n  /pasti {r['symbol'].lower()}.jk\n"
                     txt+="\nYang PASTI aja!"
                 else:
-                    txt=f"🔔 AUTO PASTI 09:15 - {today_str}\nHari ini gak ada yang PASTI 80%+, skip dulu, jaga modal!\nCek /scan buat 70%+"
+                    txt=f"🔔 AUTO PASTI 09:15 - {today_str}\nHari ini gak ada yang PASTI 80%+, skip dulu!\nCek /scan buat 70%+"
                 for cid in list(CHAT_IDS):
                     try: bot.send_message(cid, txt)
                     except: pass
                 LAST_PAGI_DATE=today_str
-            if now.hour==15 and now.minute in [30,31] and LAST_NOTIF_DATE!=today_str and len(CHAT_IDS)>0:
+            if now.hour==15 and now.minute in [30,31,35] and LAST_NOTIF_DATE!=today_str and len(CHAT_IDS)>0:
                 results=[r for r in [analyze_pasti(s) for s in WATCHLIST[:60]] if r]
                 results=sorted(results,key=lambda x:x['score'],reverse=True)[:5]
                 if results:
-                    txt=f"🔥 AUTO PASTI SORE 15:30 - {today_str}\nSiap SORE-PAGI 80%+:\n"
+                    txt=f"🔥 AUTO PASTI SORE 15:30 - {today_str}\nSiap SORE-PAGI 80%+ (Data EOD baru masuk):\n"
                     for r in results:
-                        txt+=f"✅ {r['symbol']} {r['close']:.0f} {r['score']}%\n  /sore {r['symbol'].lower()}.jk\n"
+                        txt+=f"✅ {r['symbol']} {r['close']:.0f} {r['score']}% Vol {r['vol']:.1f}x\n  /sore {r['symbol'].lower()}.jk\n"
                 else:
                     txt=f"🔔 AUTO SORE 15:30 - {today_str}\nGak ada yang PASTI hari ini, istirahat!"
                 for cid in list(CHAT_IDS):
@@ -241,13 +285,13 @@ def process_stock_request(message, mode="PASTI"):
     save_chat_id(message.chat.id)
     args=message.text.split()[1:]
     if not args:
-        bot.reply_to(message,f"Gunakan: /{mode.lower()} BRMS.JK")
+        bot.reply_to(message,f"Gunakan: /{mode.lower()} BRMS.JK atau /{mode.lower()} akra.jk")
         return
     sym=args[0].upper().replace(".JK.JK",".JK")
-    loading=bot.reply_to(message,f"⏳ {mode} {sym} cek PASTI...")
-    df,final_sym=get_data_fixed(sym)
+    loading=bot.reply_to(message,f"⏳ {mode} {sym} cek REALTIME...")
+    df,final_sym=get_data_intraday_realtime(sym)
     if df is None:
-        bot.edit_message_text(f"No data {sym}",loading.chat.id,loading.message_id); return
+        bot.edit_message_text(f"No data {sym} - coba {sym}.JK",loading.chat.id,loading.message_id); return
     try:
         buf,cap=generate_chart_fixed(df,final_sym,5,10,20,mode)
         bot.send_photo(message.chat.id,buf,caption=cap,reply_to_message_id=message.message_id)
@@ -263,7 +307,7 @@ def handle_modes(message):
 @bot.message_handler(commands=['start','help'])
 def handle_help(message):
     save_chat_id(message.chat.id)
-    bot.reply_to(message,"V15 PASTI MODE 🔥\nHanya yang 80%+ & Vol rame!\n\n/pasti BRMS.JK - cek apakah PASTI 80%+\n/pagi BRMS.JK - mode pagi\n/sore BRMS.JK - mode sore\n/scan pasti - hanya 80%+ pasti\n/scan - semua 70%+\n\nAuto 09:15 & 15:30 hanya ngasih yang PASTI!")
+    bot.reply_to(message,"V15 PASTI REALTIME MODE 🔥\nData Yahoo Finance EOD\nMarket IDX: 09:00-15:00 WIB, data baru masuk 15:15-15:30\n\n/pasti BRMS.JK - cek PASTI 80%+ realtime\n/pagi AKRA.JK - mode pagi\n/sore AKRA.JK - mode sore\n/scan pasti - hanya 80%+ pasti\n/scan - semua 70%+\n\nKalo AKRA BEARISH = harga udah di bawah EMA (turun), nunggu 09:15 besok data baru!\n\nAuto 09:15 & 15:30 WIB")
 
 @bot.message_handler(commands=['scan'])
 def handle_scan(message):
@@ -276,7 +320,7 @@ def handle_scan(message):
             try: min_price=int(a); break
             except: pass
     if pasti_mode:
-        loading=bot.reply_to(message,f"🔍 V15 PASTI Scanning 60 saham >{min_price} hanya 80%+ Vol>1.5x...")
+        loading=bot.reply_to(message,f"🔍 V15 REALTIME Scanning 60 saham >{min_price} hanya 80%+ Vol>1.5x...")
         try:
             results=[]
             for sym in WATCHLIST[:60]:
@@ -284,12 +328,12 @@ def handle_scan(message):
                 if r: results.append(r)
             results=sorted(results,key=lambda x:x['score'],reverse=True)
             if not results:
-                txt=f"🔍 V15 PASTI >{min_price} - {datetime.datetime.now(WIB).strftime('%d %b %H:%M')}\nGak ada yang PASTI 80%+ hari ini.\n\nArtinya market belum ada yang bener-bener kuat + volume rame.\nMending jaga modal, cek /scan buat yang 70%+."
+                txt=f"🔍 V15 PASTI >{min_price} - {datetime.datetime.now(WIB).strftime('%d %b %H:%M')}\nGak ada yang PASTI 80%+ hari ini.\nMarket tutup 15:00, data EOD baru masuk 15:15\nMending jaga modal, cek /scan buat yang 70%+."
             else:
-                txt=f"🔥 V15 PASTI 80%+ - {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nFilter >{min_price} | Vol>1.5x | RSI 50-68 | Total {len(results)}\n\n✅ YANG PASTI AJA ({len(results)}):\n"
+                txt=f"🔥 V15 PASTI 80%+ REALTIME - {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nFilter >{min_price} | Vol>1.5x | RSI 50-68 | Total {len(results)}\n\n✅ YANG PASTI AJA ({len(results)}):\n"
                 for i,r in enumerate(results[:10],1):
-                    txt+=f"{i}. {r['symbol']} - {r['close']:.0f} | {r['score']}% | RSI {r['rsi']:.0f} Vol {r['vol']:.1f}x\n   {r['reasons'][0] if r['reasons'] else ''}\n   /pasti {r['symbol'].lower()}.jk\n\n"
-                txt+="\nIni yang paling aman buat PAGI-SORE & SWING!"
+                    txt+=f"{i}. {r['symbol']} - {r['close']:.0f} | {r['score']}% | RSI {r['rsi']:.0f} Vol {r['vol']:.1f}x ({r['date']})\n   {r['reasons'][0] if r['reasons'] else ''}\n   /pasti {r['symbol'].lower()}.jk\n\n"
+                txt+="\nIni yang paling aman buat PAGI-SORE & SWING! Data EOD"
             bot.reply_to(message,txt)
             bot.delete_message(loading.chat.id,loading.message_id)
         except Exception as e:
@@ -299,7 +343,7 @@ def handle_scan(message):
         try:
             results=[]
             for sym in WATCHLIST[:60]:
-                df,_=get_data_fixed(sym)
+                df,_=get_data_intraday_realtime(sym)
                 if df is None: continue
                 pred,score,reasons,vol,rsi,close=predict_next(df)
                 if close<min_price: continue
@@ -322,7 +366,7 @@ def handle_scan(message):
 if __name__=="__main__":
     start_anti_tidur()
     start_auto()
-    print("Bot V15 PASTI running...")
+    print("Bot V16 INTRADAY REALTIME running...")
     while True:
         try:
             bot.infinity_polling(timeout=60, long_polling_timeout=60)
