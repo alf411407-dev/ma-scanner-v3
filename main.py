@@ -198,7 +198,7 @@ def process_stock_request(message, mode="PASTI"):
     df,final_sym=get_data_realtime(sym)
     if df is None: bot.edit_message_text(f"No data {sym}",loading.chat.id,loading.message_id); return
     try:
-        buf,cap=generate_chart_fixed(df,final_sym,5,10,20,mode)
+        buf,cap=generate_chart_fixed(df,final_sym,mode)
         bot.send_photo(message.chat.id,buf,caption=cap,reply_to_message_id=message.message_id)
         bot.delete_message(loading.chat.id,loading.message_id)
     except Exception as e: bot.edit_message_text(f"Error {final_sym}: {e}"[:400],loading.chat.id,loading.message_id)
