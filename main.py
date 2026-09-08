@@ -7,30 +7,39 @@ import matplotlib.pyplot as plt
 import telebot
 from flask import Flask
 import pytz
+import pathlib
 
 TOKEN = os.getenv("TELEGRAM_TOKEN") or os.getenv("TELEGRAM_BOT_TOKEN") or "123"
 WIB = pytz.timezone('Asia/Jakarta')
 CHAT_IDS=set()
-CHAT_FILE="/tmp/chat_ids.txt"
+CHAT_FILE="chat_ids.txt"
+CHAT_FILE_PERSIST="/data/chat_ids.txt"
 LAST_NOTIF_DATE=""
 LAST_PAGI_DATE=""
 
 def save_chat_id(cid):
     try:
         CHAT_IDS.add(cid)
-        with open(CHAT_FILE,"w") as fl:
-            fl.write(",".join(map(str,CHAT_IDS)))
+        data = ",".join(map(str,CHAT_IDS))
+        try:
+            pathlib.Path("/data").mkdir(exist_ok=True)
+            open(CHAT_FILE_PERSIST,"w").write(data)
+        except: pass
+        open(CHAT_FILE,"w").write(data)
     except: pass
 def load_chat_ids():
     try:
-        if os.path.exists(CHAT_FILE):
-            with open(CHAT_FILE) as fl:
-                for x in fl.read().split(","):
-                    if x.strip(): CHAT_IDS.add(int(x.strip()))
+        for p in [CHAT_FILE_PERSIST, CHAT_FILE, "/tmp/chat_ids.txt"]:
+            if os.path.exists(p):
+                for x in open(p).read().split(","):
+                    if x.strip():
+                        try: CHAT_IDS.add(int(x.strip()))
+                        except: pass
+                if CHAT_IDS: break
     except: pass
 load_chat_ids()
 
-WATCHLIST_BLUE = ["BBCA.JK","BBRI.JK","BMRI.JK","TLKM.JK","ASII.JK","BBNI.JK","UNVR.JK","ICBP.JK","INDF.JK","KLBF.JK","GOTO.JK","ACES.JK","ADRO.JK","ANTM.JK","ARTO.JK","BBTN.JK","BRIS.JK","CPIN.JK","EMTK.JK","EXCL.JK","HRUM.JK","INCO.JK","INDY.JK","INKP.JK","ITMG.JK","JPFA.JK","MDKA.JK","MEDC.JK","PGAS.JK","PTBA.JK","SMGR.JK","TINS.JK","TOWR.JK","UNTR.JK","PWON.JK","BSDE.JK","CTRA.JK","SMRA.JK","LPKR.JK","ELSA.JK","BRPT.JK","ESSA.JK","AKRA.JK","AMRT.JK","BBYB.JK"]
+WATCHLIST_BLUE = ["BBCA.JK","BBRI.JK","BMRI.JK","TLKM.JK","ASII.JK","BBNI.JK","UNVR.JK","ICBP.JK","INDF.JK","KLBF.JK","GOTO.JK","ACES.JK","ADRO.JK","ANTM.JK","ARTO.JK","BBTN.JK","BRIS.JK","CPIN.JK","EMTK.JK","EXCL.JK","HRUM.JK","INCO.JK","INDY.JK","INKP.JK","ITMG.JK","JPFA.JK","MDKA.JK","MEDC.JK","PGAS.JK","PTBA.JK","SMGR.JK","TINS.JK","TOWR.JK","UNTR.JK","PWON.JK","BSDE.JK","CTRA.JK","SMRA.JK","LPKR.JK","ELSA.JK","BRPT.JK","ESSA.JK","AKRA.JK","AMRT.JK","BBYB.JK","MEDS.JK","BREN.JK","CUAN.JK","AMMN.JK","MBMA.JK","NCKL.JK","PTRO.JK","RAJA.JK","PGEO.JK","BRMS.JK","DEWA.JK"]
 WATCHLIST_GORENGAN = ["BRMS.JK","DEWA.JK","BUVA.JK","COCO.JK","HATM.JK","BUMI.JK","ENRG.JK","BULL.JK","BRPT.JK","ESSA.JK","BEEF.JK","CARE.JK","ZBRA.JK","BIPI.JK","BIMA.JK","BBSS.JK","BGTG.JK","BWPT.JK","CBMF.JK","CMPP.JK","CRAB.JK","DOID.JK","FIRE.JK","GOTO.JK","HUMI.JK","IOTF.JK","KIOS.JK","KPIG.JK","LMAX.JK","MMLP.JK","MTEL.JK","NASI.JK","NICE.JK","PGEO.JK","PTRO.JK","SGER.JK","SMLE.JK","SRTG.JK","TPIA.JK","WIFI.JK","WOOL.JK","BEST.JK","MINA.JK"]
 WATCHLIST = list(dict.fromkeys(WATCHLIST_BLUE + WATCHLIST_GORENGAN))
 
@@ -39,11 +48,11 @@ start_time=time.time()
 @app.route('/')
 def home():
     uptime=int(time.time()-start_time)
-    return f"Bot V15 PASTI - Uptime {uptime//3600}h {(uptime%3600)//60}m {datetime.datetime.now(WIB).strftime('%H:%M:%S WIB')}"
+    return f"Bot V16 PERFECT 100% - Uptime {uptime//3600}h {(uptime%3600)//60}m {datetime.datetime.now(WIB).strftime('%H:%M:%S WIB')}"
 @app.route('/health')
-def health(): return "OK V15",200
+def health(): return "OK V16 PERFECT",200
 @app.route('/ping')
-def ping(): return "pong V15",200
+def ping(): return "pong V16 PERFECT",200
 def run_flask(): app.run(host='0.0.0.0',port=8080)
 def keep_alive():
     t=threading.Thread(target=run_flask); t.daemon=True; t.start()
@@ -177,7 +186,7 @@ def generate_chart_fixed(df,symbol,mode="PASTI"):
         ax_vol.bar(plot_df.index,plot_df['Volume'],color=colors,alpha=0.6)
     plt.tight_layout(); buf=io.BytesIO(); plt.savefig(buf,format='png',dpi=180,bbox_inches='tight'); plt.close(fig); buf.seek(0)
     reason_txt="\n".join([f"- {r}" for r in reasons[:5]])
-    cap=f"{plot_df.index[-1].strftime('%Y-%m-%d')} - {symbol.upper()} [{mode}] {pasti_tag}\nClose {float(last['Close']):.0f} | EMA5 {float(plot_df[f'EMA{ema_fast}'].iloc[-1]):.0f} EMA10 {float(plot_df[f'EMA{ema_mid}'].iloc[-1]):.0f} EMA20 {float(plot_df[f'EMA{ema_slow}'].iloc[-1]):.0f} RSI {float(last['RSI']):.1f} Vol {vol_ratio:.1f}x\nTrend {trend}\n\n{icon} PREDIKSI: {pred} {score}% {pasti_tag}\n{reason_txt}\n\nENTRY {swing_entry} | SL {swing_sl} (-4%)\nTP1 {swing_tp1} (+7%) TP2 {swing_tp2} (+12%) TP3 {swing_tp3} (+20%)\nV15 PASTI - Hanya 80%+ yang keluar!"
+    cap=f"{plot_df.index[-1].strftime('%Y-%m-%d')} - {symbol.upper()} [{mode}] {pasti_tag}\nClose {float(last['Close']):.0f} | EMA5 {float(plot_df[f'EMA{ema_fast}'].iloc[-1]):.0f} EMA10 {float(plot_df[f'EMA{ema_mid}'].iloc[-1]):.0f} EMA20 {float(plot_df[f'EMA{ema_slow}'].iloc[-1]):.0f} RSI {float(last['RSI']):.1f} Vol {vol_ratio:.1f}x\nTrend {trend}\n\n{icon} PREDIKSI: {pred} {score}% {pasti_tag}\n{reason_txt}\n\nENTRY {swing_entry} | SL {swing_sl} (-4%)\nTP1 {swing_tp1} (+7%) TP2 {swing_tp2} (+12%) TP3 {swing_tp3} (+20%)\nV16 PERFECT - Hanya 80%+ yang keluar!"
     return buf,cap
 
 def analyze_pasti(symbol, min_price=50):
@@ -212,6 +221,9 @@ def auto_notif_loop():
         try:
             now=datetime.datetime.now(WIB)
             today_str=now.strftime("%Y-%m-%d")
+            if now.weekday() >= 5:
+                time.sleep(3600)
+                continue
             if now.hour==9 and now.minute in [15,16] and LAST_PAGI_DATE!=today_str and len(CHAT_IDS)>0:
                 results=[r for r in [analyze_pasti(s) for s in WATCHLIST[:60]] if r]
                 results=sorted(results,key=lambda x:x['score'],reverse=True)[:5]
@@ -276,7 +288,7 @@ def handle_modes(message):
 @bot.message_handler(commands=['start','help'])
 def handle_help(message):
     save_chat_id(message.chat.id)
-    bot.reply_to(message,"V15 PASTI MODE 🔥\nHanya yang 80%+ & Vol rame!\n\n/pasti BRMS.JK - cek apakah PASTI 80%+\n/pagi BRMS.JK - mode pagi\n/sore BRMS.JK - mode sore\n/scan pasti - hanya 80%+ pasti\n/scan - semua 70%+\n\nAuto 09:15 & 15:30 hanya ngasih yang PASTI!")
+    bot.reply_to(message,"V16 PERFECT MODE 🔥\nHanya yang 80%+ & Vol rame!\n\n/pasti BRMS.JK - cek apakah PASTI 80%+\n/pagi BRMS.JK - mode pagi\n/sore BRMS.JK - mode sore\n/scan pasti - hanya 80%+ pasti\n/scan - semua 70%+\n\nAuto 09:15 & 15:30 hanya ngasih yang PASTI!")
 
 @bot.message_handler(commands=['scan'])
 def handle_scan(message):
@@ -290,7 +302,7 @@ def handle_scan(message):
             except: pass
 
     if pasti_mode:
-        loading=bot.reply_to(message,f"🔍 V15 PASTI Scanning 60 saham >{min_price} hanya 80%+ Vol>1.5x...")
+        loading=bot.reply_to(message,f"🔍 V16 PERFECT Scanning 60 saham >{min_price} hanya 80%+ Vol>1.5x...")
         try:
             results=[]
             for sym in WATCHLIST[:60]:
@@ -298,9 +310,9 @@ def handle_scan(message):
                 if r: results.append(r)
             results=sorted(results,key=lambda x:x['score'],reverse=True)
             if not results:
-                txt=f"🔍 V15 PASTI >{min_price} - {datetime.datetime.now(WIB).strftime('%d %b %H:%M')}\nGak ada yang PASTI 80%+ hari ini.\n\nArtinya market belum ada yang bener-bener kuat + volume rame.\nMending jaga modal, cek /scan buat yang 70%+."
+                txt=f"🔍 V16 PERFECT >{min_price} - {datetime.datetime.now(WIB).strftime('%d %b %H:%M')}\nGak ada yang PASTI 80%+ hari ini.\n\nArtinya market belum ada yang bener-bener kuat + volume rame.\nMending jaga modal, cek /scan buat yang 70%+."
             else:
-                txt=f"🔥 V15 PASTI 80%+ - {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nFilter >{min_price} | Vol>1.5x | RSI 50-68 | Total {len(results)}\n\n✅ YANG PASTI AJA ({len(results)}):\n"
+                txt=f"🔥 V16 PERFECT 80%+ - {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nFilter >{min_price} | Vol>1.5x | RSI 50-68 | Total {len(results)}\n\n✅ YANG PASTI AJA ({len(results)}):\n"
                 for i,r in enumerate(results[:10],1):
                     txt+=f"{i}. {r['symbol']} - {r['close']:.0f} | {r['score']}% | RSI {r['rsi']:.0f} Vol {r['vol']:.1f}x\n   {r['reasons'][0] if r['reasons'] else ''}\n   /pasti {r['symbol'].lower()}.jk\n\n"
                 txt+="\nIni yang paling aman buat PAGI-SORE & SWING!"
@@ -337,8 +349,7 @@ def handle_scan(message):
 if __name__=="__main__":
     start_anti_tidur()
     start_auto()
-    print("Bot V15 PASTI REALTIME 120% FIXED running...")
-    # FIX 409 Conflict - hapus webhook & pastikan 1 instance aja
+    print("Bot V16 PERFECT 100% PASTI running...")
     try:
         bot.remove_webhook()
         time.sleep(2)
@@ -351,7 +362,6 @@ if __name__=="__main__":
             bot.infinity_polling(timeout=60, long_polling_timeout=60, skip_pending=True)
         except Exception as e:
             print(f"Restart after error: {e}")
-            try:
-                bot.remove_webhook()
+            try: bot.remove_webhook()
             except: pass
             time.sleep(5)
