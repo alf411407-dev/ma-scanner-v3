@@ -32,11 +32,11 @@ start_time=time.time()
 @app.route('/')
 def home():
     uptime=int(time.time()-start_time)
-    return f"Bot V15 PASTI REALTIME 120% - Uptime {uptime//3600}h {datetime.datetime.now(WIB).strftime('%H:%M:%S WIB')}"
+    return f"Bot V15 PASTI REALTIME 120% FIXED - Uptime {uptime//3600}h {datetime.datetime.now(WIB).strftime('%H:%M:%S WIB')}"
 @app.route('/health')
-def health(): return "OK V15 120%",200
+def health(): return "OK V15 120% FIXED",200
 @app.route('/ping')
-def ping(): return "pong V15 120%",200
+def ping(): return "pong V15 120% FIXED",200
 def run_flask(): app.run(host='0.0.0.0',port=8080)
 def keep_alive():
     t=threading.Thread(target=run_flask); t.daemon=True; t.start()
@@ -145,7 +145,7 @@ def generate_chart_fixed(df,symbol,mode="PASTI"):
         ax_vol.bar(plot_df.index,plot_df['Volume'],color=colors,alpha=0.6)
     plt.tight_layout(); buf=io.BytesIO(); plt.savefig(buf,format='png',dpi=180,bbox_inches='tight'); plt.close(fig); buf.seek(0)
     reason_txt="\n".join([f"- {r}" for r in reasons[:5]])
-    cap=f"{data_date} (cek {now_wib}) - {symbol.upper()} [{mode}] {pasti_tag}\nClose {float(last['Close']):.0f} | EMA5 {float(plot_df['EMA5'].iloc[-1]):.0f} EMA10 {float(plot_df['EMA10'].iloc[-1]):.0f} EMA20 {float(plot_df['EMA20'].iloc[-1]):.0f} RSI {float(last['RSI']):.1f} Vol {vol_ratio:.1f}x\nTrend {trend} | Data Yahoo: {data_date}\n\n{icon} PREDIKSI: {pred} {score}% {pasti_tag}\n{reason_txt}\n\nENTRY {swing_entry} | SL {swing_sl} (-4%)\nTP1 {swing_tp1} (+7%) TP2 {swing_tp2} (+12%) TP3 {swing_tp3} (+20%)\nV15 REALTIME - Yahoo EOD (tutup 15:00 WIB update)\nMarket buka 09:00-15:00 WIB"
+    cap=f"{data_date} (cek {now_wib}) - {symbol.upper()} [{mode}] {pasti_tag}\nClose {float(last['Close']):.0f} | EMA5 {float(plot_df['EMA5'].iloc[-1]):.0f} EMA10 {float(plot_df['EMA10'].iloc[-1]):.0f} EMA20 {float(plot_df['EMA20'].iloc[-1]):.0f} RSI {float(last['RSI']):.1f} Vol {vol_ratio:.1f}x\nTrend {trend} | Data Yahoo: {data_date}\n\n{icon} PREDIKSI: {pred} {score}% {pasti_tag}\n{reason_txt}\n\nENTRY {swing_entry} | SL {swing_sl} (-4%)\nTP1 {swing_tp1} (+7%) TP2 {swing_tp2} (+12%) TP3 {swing_tp3} (+20%)\nV15 REALTIME FIXED - Yahoo EOD (tutup 15:00 WIB update)\nMarket buka 09:00-15:00 WIB"
     return buf,cap
 def analyze_pasti(symbol, min_price=50):
     try:
@@ -208,7 +208,7 @@ def handle_modes(message):
 @bot.message_handler(commands=['start','help'])
 def handle_help(message):
     save_chat_id(message.chat.id)
-    bot.reply_to(message,"V15 PASTI REALTIME 120% 🔥\nData Yahoo EOD\nMarket 09:00-15:00 WIB, data baru 15:15-15:30\n\n/pasti AKRA.JK - cek PASTI 80%+\n/scan pasti - hanya 80%+ pasti\nAuto 09:15 & 15:30 WIB")
+    bot.reply_to(message,"V15 PASTI REALTIME 120% FIXED 🔥\nData Yahoo EOD\nMarket 09:00-15:00 WIB, data baru 15:15-15:30\n\n/pasti AKRA.JK - cek PASTI 80%+\n/scan pasti - hanya 80%+ pasti\nAuto 09:15 & 15:30 WIB")
 @bot.message_handler(commands=['scan'])
 def handle_scan(message):
     save_chat_id(message.chat.id); pasti_mode="pasti" in message.text.lower()
@@ -219,7 +219,7 @@ def handle_scan(message):
             results=sorted(results,key=lambda x:x['score'],reverse=True)
             if not results: txt=f"🔍 V15 PASTI - {datetime.datetime.now(WIB).strftime('%d %b %H:%M')}\nGak ada 80%+"
             else:
-                txt=f"🔥 V15 PASTI 80%+ REALTIME 120% - {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nTotal {len(results)}\n\n✅ YANG PASTI AJA ({len(results)}):\n"
+                txt=f"🔥 V15 PASTI 80%+ REALTIME 120% FIXED - {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nTotal {len(results)}\n\n✅ YANG PASTI AJA ({len(results)}):\n"
                 for i,r in enumerate(results[:10],1): txt+=f"{i}. {r['symbol']} - {r['close']:.0f} | {r['score']}% | RSI {r['rsi']:.0f} Vol {r['vol']:.1f}x ({r['date']})\n   /pasti {r['symbol'].lower()}.jk\n\n"
             bot.reply_to(message,txt); bot.delete_message(loading.chat.id,loading.message_id)
         except Exception as e: bot.edit_message_text(f"Error: {e}"[:400],loading.chat.id,loading.message_id)
@@ -239,7 +239,7 @@ def handle_scan(message):
         except Exception as e: bot.edit_message_text(f"Error: {e}"[:400],loading.chat.id,loading.message_id)
 if __name__=="__main__":
     start_anti_tidur(); start_auto()
-    print("Bot V15 PASTI REALTIME 120% running...")
+    print("Bot V15 PASTI REALTIME 120% FIXED running...")
     while True:
         try: bot.infinity_polling(timeout=60, long_polling_timeout=60)
         except Exception as e: print(f"Restart: {e}"); time.sleep(3)
