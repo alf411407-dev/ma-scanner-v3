@@ -240,6 +240,20 @@ def handle_scan(message):
 if __name__=="__main__":
     start_anti_tidur(); start_auto()
     print("Bot V15 PASTI REALTIME 120% FIXED running...")
+    # FIX 409 Conflict - hapus webhook & pastikan 1 instance aja
+    try:
+        bot.remove_webhook()
+        time.sleep(2)
+        bot.delete_webhook(drop_pending_updates=True)
+        time.sleep(1)
+    except: pass
     while True:
-        try: bot.infinity_polling(timeout=60, long_polling_timeout=60)
-        except Exception as e: print(f"Restart: {e}"); time.sleep(3)
+        try:
+            print("Starting polling - single instance mode...")
+            bot.infinity_polling(timeout=60, long_polling_timeout=60, skip_pending=True)
+        except Exception as e:
+            print(f"Restart after error: {e}")
+            try:
+                bot.remove_webhook()
+            except: pass
+            time.sleep(5)
