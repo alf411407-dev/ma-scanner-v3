@@ -1,1 +1,7 @@
-pyTelegramBotAPI\nyfinance\npandas\nmatplotlib\nFlask\npytz\nrequests\n
+pyTelegramBotAPI
+yfinance
+pandas
+matplotlib
+Flask
+pytz
+requests
