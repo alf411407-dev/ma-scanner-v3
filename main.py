@@ -215,7 +215,7 @@ def generate_chart_fixed(df,symbol,mode="PASTI"):
         ax_vol.bar(plot_df.index,plot_df['Volume'],color=colors,alpha=0.6)
     plt.tight_layout(); buf=io.BytesIO(); plt.savefig(buf,format='png',dpi=180,bbox_inches='tight'); plt.close(fig); buf.seek(0)
     reason_txt="\n".join([f"- {r}" for r in reasons[:5]])
-    cap=f"{plot_df.index[-1].strftime('%Y-%m-%d')} - {symbol.upper()} [{mode}] {pasti_tag}\nClose {float(last['Close']):.0f} | EMA5 {float(plot_df[f'EMA{ema_fast}'].iloc[-1]):.0f} EMA10 {float(plot_df[f'EMA{ema_mid}'].iloc[-1]):.0f} EMA20 {float(plot_df[f'EMA{ema_slow}'].iloc[-1]):.0f} RSI {float(last['RSI']):.1f} Vol {vol_ratio:.1f}x\nTrend {trend}\n\n{icon} PREDIKSI: {pred} {score}% {pasti_tag}\n{reason_txt}\n\nENTRY {swing_entry} | SL {swing_sl} (-4%)\nTP1 {swing_tp1} (+7%) TP2 {swing_tp2} (+12%) TP3 {swing_tp3} (+20%)\nV16 PERFECT - Hanya 80%+ yang keluar!"
+    cap=f"{plot_df.index[-1].strftime('%Y-%m-%d')} - {symbol.upper()} [{mode}] {pasti_tag}\nClose {float(last['Close']):.0f} | EMA5 {float(plot_df[f'EMA{ema_fast}'].iloc[-1]):.0f} EMA10 {float(plot_df[f'EMA{ema_mid}'].iloc[-1]):.0f} EMA20 {float(plot_df[f'EMA{ema_slow}'].iloc[-1]):.0f} RSI {float(last['RSI']):.1f} Vol {vol_ratio:.1f}x\nTrend {trend}\n\n{icon} PREDIKSI: {pred} {score}% {pasti_tag}\n{reason_txt}\n\nENTRY {swing_entry} | SL {swing_sl} (-4%)\nTP1 {swing_tp1} (+7%) TP2 {swing_tp2} (+12%) TP3 {swing_tp3} (+20%)\nV17 PERFECT - Hanya 80%+ yang keluar!"
     return buf,cap
 
 def analyze_pasti(symbol, min_price=50):
