@@ -369,26 +369,41 @@ def handle_scan(message):
         except Exception as e:
             bot.edit_message_text(f"Error: {e}"[:400],loading.chat.id,loading.message_id)
     else:
-        # scan longgar 70%+
-        loading=bot.reply_to(message,f"🔍 V15 Scanning 60 saham >{min_price} 70%+...")
+        # scan longgar 70%+ V17 ANTI-PUCUK juga
+        loading=bot.reply_to(message,f"🔍 V17 ANTI-PUCUK Scanning 60 saham >{min_price} 70%+...")
         try:
             results=[]
             for sym in WATCHLIST[:60]:
                 df,_=get_data_fixed(sym)
                 if df is None: continue
+                # ANTI-PUCUK filter juga buat /scan
+                try:
+                    df_f=flatten_df(df.copy())
+                    cl=pd.Series(df_f['Close']).dropna()
+                    if len(cl)>=4:
+                        c3=float(cl.iloc[-4])
+                        cur=float(cl.iloc[-1])
+                        pump=(cur-c3)/c3*100 if c3>0 else 0
+                        if pump>30: continue
+                    hi=float(df_f['High'].iloc[-1])
+                    cu=float(df_f['Close'].iloc[-1])
+                    wick=(hi-cu)/cu*100 if cu>0 else 0
+                    if wick>12: continue
+                except:
+                    pass
                 pred,score,reasons,vol,rsi,close=predict_next(df)
                 if close<min_price: continue
                 if score>=70 and "NAIK" in pred and vol>=1.2 and 50<=rsi<=70:
-                    results.append({'symbol':sym.replace('.JK',''), 'close':close, 'score':score, 'vol':vol, 'rsi':rsi})
+                    results.append({'symbol':sym.replace('.JK',''), 'close':close, 'score':score, 'vol':vol, 'rsi':rsi, 'reasons':reasons})
             results=sorted(results,key=lambda x:x['score'],reverse=True)
             if not results:
-                txt=f"🔍 V15 >{min_price} {datetime.datetime.now(WIB).strftime('%d %b %H:%M')}\nGak ada 70%+."
+                txt=f"🔍 V17 ANTI-PUCUK >{min_price} {datetime.datetime.now(WIB).strftime('%d %b %H:%M')}\nGak ada 70%+ ANTI-PUCUK hari ini.\nMarket banyak pucuk/distribution."
             else:
-                txt=f"🔥 V15 SCAN 70%+ - {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nTotal {len(results)}\n\n"
+                txt=f"🔥 V17 ANTI-PUCUK SCAN 70%+ - {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nTotal {len(results)} (udah filter pucuk)\n\n"
                 for i,r in enumerate(results[:15],1):
                     tag="🔥 PASTI" if r['score']>=80 else "⚡"
-                    txt+=f"{i}. {tag} {r['symbol']} {r['close']:.0f} {r['score']}% Vol {r['vol']:.1f}x\n   /pagi {r['symbol'].lower()}.jk\n"
-                txt+="\nKetik /scan pasti buat yang 80%+ aja!"
+                    txt+=f"{i}. {tag} {r['symbol']} {r['close']:.0f} {r['score']}% Vol {r['vol']:.1f}x\n   {r['reasons'][0] if r['reasons'] else ''}\n   /pagi {r['symbol'].lower()}.jk\n\n"
+                txt+="Ketik /scan pasti buat yang 80%+ aja!"
             bot.reply_to(message,txt)
             bot.delete_message(loading.chat.id,loading.message_id)
         except Exception as e:
