@@ -1,3 +1,7 @@
-python-telegram-bot
+pyTelegramBotAPI
 yfinance
 pandas
+matplotlib
+Flask
+pytz
+requests
