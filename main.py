@@ -48,11 +48,11 @@ start_time=time.time()
 @app.route('/')
 def home():
     uptime=int(time.time()-start_time)
-    return f"Bot V16 PERFECT 100% - Uptime {uptime//3600}h {(uptime%3600)//60}m {datetime.datetime.now(WIB).strftime('%H:%M:%S WIB')}"
+    return f"Bot V17 ANTI-PUCUK 100% - Uptime {uptime//3600}h {(uptime%3600)//60}m {datetime.datetime.now(WIB).strftime('%H:%M:%S WIB')}"
 @app.route('/health')
-def health(): return "OK V16 PERFECT",200
+def health(): return "OK V17 ANTI-PUCUK",200
 @app.route('/ping')
-def ping(): return "pong V16 PERFECT",200
+def ping(): return "pong V17 ANTI-PUCUK",200
 def run_flask(): app.run(host='0.0.0.0',port=8080)
 def keep_alive():
     t=threading.Thread(target=run_flask); t.daemon=True; t.start()
@@ -124,7 +124,36 @@ def predict_next(df):
         # Trend naik 2 hari berturut?
         naik_2hari = curr_close > prev_close and prev_close > float(close.iloc[-3])
         
+        # --- V17 ANTI-PUCUK FILTER ---
+        close_3d_ago = float(close.iloc[-4]) if len(close)>=4 else curr_close
+        close_5d_ago = float(close.iloc[-6]) if len(close)>=6 else curr_close
+        pump_3d = (curr_close - close_3d_ago)/close_3d_ago*100 if close_3d_ago>0 else 0
+        pump_5d = (curr_close - close_5d_ago)/close_5d_ago*100 if close_5d_ago>0 else 0
+        # wick panjang = (high - close) / close
+        try:
+            last_high = float(df['High'].iloc[-1])
+            last_low = float(df['Low'].iloc[-1])
+            wick_up = (last_high - curr_close)/curr_close*100 if curr_close>0 else 0
+        except:
+            last_high = curr_close
+            last_low = curr_close
+            wick_up = 0
+        
         score=50; reasons=[]
+        # Filter pucuk dulu
+        if pump_3d > 50:
+            score-=35
+            reasons.append(f"⛔ PUCUK! Naik {pump_3d:.0f}% 3 hari -35%")
+        elif pump_3d > 35:
+            score-=20
+            reasons.append(f"⚠️ Udah naik tinggi {pump_3d:.0f}% 3hr -20%")
+        if pump_5d > 70:
+            score-=20
+            reasons.append(f"⛔ Pompom {pump_5d:.0f}% 5 hari -20%")
+        if wick_up > 15:
+            score-=15
+            reasons.append(f"⛔ Wick panjang {wick_up:.0f}% distribution -15%")
+        
         if e5>e10>e20: score+=20; reasons.append(f"EMA5>EMA10>EMA20 BULLISH +20%")
         elif e5<e10<e20: score-=20; reasons.append(f"BEARISH -20%")
         dist=abs(e5-e10)/e10*100 if e10!=0 else 0
@@ -288,7 +317,7 @@ def handle_modes(message):
 @bot.message_handler(commands=['start','help'])
 def handle_help(message):
     save_chat_id(message.chat.id)
-    bot.reply_to(message,"V16 PERFECT MODE 🔥\nHanya yang 80%+ & Vol rame!\n\n/pasti BRMS.JK - cek apakah PASTI 80%+\n/pagi BRMS.JK - mode pagi\n/sore BRMS.JK - mode sore\n/scan pasti - hanya 80%+ pasti\n/scan - semua 70%+\n\nAuto 09:15 & 15:30 hanya ngasih yang PASTI!")
+    bot.reply_to(message,"V17 ANTI-PUCUK MODE 🔥\nHanya yang 80%+ & Vol rame!\n\n/pasti BRMS.JK - cek apakah PASTI 80%+\n/pagi BRMS.JK - mode pagi\n/sore BRMS.JK - mode sore\n/scan pasti - hanya 80%+ pasti\n/scan - semua 70%+\n\nAuto 09:15 & 15:30 hanya ngasih yang PASTI!")
 
 @bot.message_handler(commands=['scan'])
 def handle_scan(message):
@@ -349,7 +378,7 @@ def handle_scan(message):
 if __name__=="__main__":
     start_anti_tidur()
     start_auto()
-    print("Bot V16 PERFECT 100% PASTI running...")
+    print("Bot V17 ANTI-PUCUK 100% PASTI running...")
     try:
         bot.remove_webhook()
         time.sleep(2)
