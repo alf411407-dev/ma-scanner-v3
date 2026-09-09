@@ -288,9 +288,12 @@ def auto_notif_loop():
                 results=[r for r in [analyze_pasti(s) for s in WATCHLIST[:60]] if r]
                 results=sorted(results,key=lambda x:x['score'],reverse=True)[:5]
                 if results:
-                    txt=f"🔥 AUTO PASTI SORE 15:30 - {today_str}\nSiap SORE-PAGI 80%+:\n"
+                    txt=f"🚀 GAS SORE! AUTO PASTI SORE 15:30 - {today_str}\nAda {len(results)} buat besok PAGI:\n\n"
                     for r in results:
-                        txt+=f"✅ {r['symbol']} {r['close']:.0f} {r['score']}%\n  /sore {r['symbol'].lower()}.jk\n"
+                        sl = int(r['close']*0.96)
+                        tp = int(r['close']*1.07)
+                        txt+=f"✅ {r['symbol']} {r['close']:.0f} | {r['score']}% | Vol {r['vol']:.1f}x\n  ENTRY {r['close']:.0f} SL {sl} TP {tp}\n  /sore {r['symbol'].lower()}.jk\n\n"
+                    txt+="KLO ADA MASUK AJA! Hold buat PAGI!"
                 else:
                     txt=f"🔔 AUTO SORE 15:30 - {today_str}\nGak ada yang PASTI hari ini, istirahat!"
                 for cid in list(CHAT_IDS):
