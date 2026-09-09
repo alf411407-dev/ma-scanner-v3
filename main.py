@@ -226,6 +226,24 @@ def analyze_pasti(symbol, min_price=50):
         if curr_close < min_price: return None
         if "NAIK" not in pred: return None
         
+        # V17 ANTI-PUCUK - HARD BLOCK
+        df_flat=flatten_df(df.copy())
+        close=pd.Series(df_flat['Close']).dropna()
+        # pump check
+        if len(close)>=4:
+            c3 = float(close.iloc[-4])
+            pump3 = (curr_close-c3)/c3*100 if c3>0 else 0
+            if pump3 > 30:  # MEDS 71->93 = 30%+ -> BLOCK
+                return None
+        # wick check
+        try:
+            high = float(df_flat['High'].iloc[-1])
+            wick = (high-curr_close)/curr_close*100 if curr_close>0 else 0
+            if wick > 12:  # MEDS wick 18% -> BLOCK
+                return None
+        except:
+            pass
+        
         # FILTER PASTI - SUPER KETAT
         # 1. Score minimal 80%
         if score < 80: return None
@@ -234,8 +252,6 @@ def analyze_pasti(symbol, min_price=50):
         # 3. RSI ideal 50-68 (gak overbought)
         if not (50 <= rsi <= 68): return None
         # 4. Harus bullish atau baru cross up
-        df_flat=flatten_df(df.copy())
-        close=pd.Series(df_flat['Close']).dropna()
         ema5=calc_ema(close,5).iloc[-1]; ema10=calc_ema(close,10).iloc[-1]; ema20=calc_ema(close,20).iloc[-1]
         if not (ema5>ema10): return None  # minimal EMA5 di atas EMA10
         # 5. Close di atas EMA5 (kuat)
@@ -331,7 +347,7 @@ def handle_scan(message):
             except: pass
 
     if pasti_mode:
-        loading=bot.reply_to(message,f"🔍 V16 PERFECT Scanning 60 saham >{min_price} hanya 80%+ Vol>1.5x...")
+        loading=bot.reply_to(message,f"🔍 V17 ANTI-PUCUK Scanning 60 saham >{min_price} hanya 80%+ Vol>1.5x...")
         try:
             results=[]
             for sym in WATCHLIST[:60]:
@@ -339,9 +355,9 @@ def handle_scan(message):
                 if r: results.append(r)
             results=sorted(results,key=lambda x:x['score'],reverse=True)
             if not results:
-                txt=f"🔍 V16 PERFECT >{min_price} - {datetime.datetime.now(WIB).strftime('%d %b %H:%M')}\nGak ada yang PASTI 80%+ hari ini.\n\nArtinya market belum ada yang bener-bener kuat + volume rame.\nMending jaga modal, cek /scan buat yang 70%+."
+                txt=f"🔍 V17 ANTI-PUCUK >{min_price} - {datetime.datetime.now(WIB).strftime('%d %b %H:%M')}\nGak ada yang PASTI 80%+ hari ini.\n\nArtinya market belum ada yang bener-bener kuat + volume rame.\nMending jaga modal, cek /scan buat yang 70%+."
             else:
-                txt=f"🔥 V16 PERFECT 80%+ - {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nFilter >{min_price} | Vol>1.5x | RSI 50-68 | Total {len(results)}\n\n✅ YANG PASTI AJA ({len(results)}):\n"
+                txt=f"🔥 V17 ANTI-PUCUK 80%+ - {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nFilter >{min_price} | Vol>1.5x | RSI 50-68 | Total {len(results)}\n\n✅ YANG PASTI AJA ({len(results)}):\n"
                 for i,r in enumerate(results[:10],1):
                     txt+=f"{i}. {r['symbol']} - {r['close']:.0f} | {r['score']}% | RSI {r['rsi']:.0f} Vol {r['vol']:.1f}x\n   {r['reasons'][0] if r['reasons'] else ''}\n   /pasti {r['symbol'].lower()}.jk\n\n"
                 txt+="\nIni yang paling aman buat PAGI-SORE & SWING!"
