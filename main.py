@@ -15,6 +15,35 @@ CHAT_FILE="chat_ids.txt"
 CHAT_FILE_PERSIST="/data/chat_ids.txt"
 LAST_NOTIF_DATE=""
 LAST_PAGI_DATE=""
+SORE_CACHE_FILE="/data/sore_cache.txt"
+SORE_CACHE_FILE_LOCAL="sore_cache.txt"
+LAST_SORE_CACHE=[]
+
+def save_sore_cache(results):
+    global LAST_SORE_CACHE
+    try:
+        LAST_SORE_CACHE = results
+        import json, pathlib
+        data = json.dumps(results[:10])
+        try:
+            pathlib.Path("/data").mkdir(exist_ok=True)
+            open(SORE_CACHE_FILE,"w").write(data)
+        except: pass
+        open(SORE_CACHE_FILE_LOCAL,"w").write(data)
+    except: pass
+
+def load_sore_cache():
+    global LAST_SORE_CACHE
+    try:
+        import json, os
+        for p in [SORE_CACHE_FILE, SORE_CACHE_FILE_LOCAL, "/tmp/sore_cache.txt"]:
+            if os.path.exists(p):
+                try:
+                    LAST_SORE_CACHE = json.loads(open(p).read())
+                    break
+                except: pass
+    except: pass
+
 def save_chat_id(cid):
     try:
         CHAT_IDS.add(cid)
@@ -44,11 +73,11 @@ start_time=time.time()
 @app.route('/')
 def home():
     uptime=int(time.time()-start_time)
-    return f"Bot V17 ANTI-PUCUK 100% - Uptime {uptime//3600}h {(uptime%3600)//60}m {datetime.datetime.now(WIB).strftime('%H:%M:%S WIB')}"
+    return f"Bot V18 ANTI-HILANG CACHE - Uptime {uptime//3600}h {(uptime%3600)//60}m {datetime.datetime.now(WIB).strftime('%H:%M:%S WIB')}"
 @app.route('/health')
-def health(): return "OK V17 ANTI-PUCUK",200
+def health(): return "OK V18 ANTI-HILANG",200
 @app.route('/ping')
-def ping(): return "pong V17 ANTI-PUCUK",200
+def ping(): return "pong V18 ANTI-HILANG",200
 def run_flask(): app.run(host='0.0.0.0',port=8080)
 def keep_alive():
     t=threading.Thread(target=run_flask); t.daemon=True; t.start()
@@ -200,7 +229,7 @@ def generate_chart_fixed(df,symbol,mode="PASTI"):
         ax_vol.bar(plot_df.index,plot_df['Volume'],color=colors,alpha=0.6)
     plt.tight_layout(); buf=io.BytesIO(); plt.savefig(buf,format='png',dpi=180,bbox_inches='tight'); plt.close(fig); buf.seek(0)
     reason_txt="\n".join([f"- {r}" for r in reasons[:5]])
-    cap=f"{plot_df.index[-1].strftime('%Y-%m-%d')} - {symbol.upper()} [{mode}] {pasti_tag}\nClose {float(last['Close']):.0f} | EMA5 {float(plot_df[f'EMA{ema_fast}'].iloc[-1]):.0f} EMA10 {float(plot_df[f'EMA{ema_mid}'].iloc[-1]):.0f} EMA20 {float(plot_df[f'EMA{ema_slow}'].iloc[-1]):.0f} RSI {float(last['RSI']):.1f} Vol {vol_ratio:.1f}x\nTrend {trend}\n\n{icon} PREDIKSI: {pred} {score}% {pasti_tag}\n{reason_txt}\n\nENTRY {swing_entry} | SL {swing_sl} (-4%)\nTP1 {swing_tp1} (+7%) TP2 {swing_tp2} (+12%) TP3 {swing_tp3} (+20%)\nV17 ANTI-PUCUK 100% - Hanya 80%+ yang keluar!"
+    cap=f"{plot_df.index[-1].strftime('%Y-%m-%d')} - {symbol.upper()} [{mode}] {pasti_tag}\nClose {float(last['Close']):.0f} | EMA5 {float(plot_df[f'EMA{ema_fast}'].iloc[-1]):.0f} EMA10 {float(plot_df[f'EMA{ema_mid}'].iloc[-1]):.0f} EMA20 {float(plot_df[f'EMA{ema_slow}'].iloc[-1]):.0f} RSI {float(last['RSI']):.1f} Vol {vol_ratio:.1f}x\nTrend {trend}\n\n{icon} PREDIKSI: {pred} {score}% {pasti_tag}\n{reason_txt}\n\nENTRY {swing_entry} | SL {swing_sl} (-4%)\nTP1 {swing_tp1} (+7%) TP2 {swing_tp2} (+12%) TP3 {swing_tp3} (+20%)\nV18 ANTI-HILANG CACHE - Hanya 80%+ yang keluar!"
     return buf,cap
 def analyze_pasti(symbol, min_price=50):
     try:
@@ -239,12 +268,12 @@ def auto_notif_loop():
                     if r: results.append(r)
                 results=sorted(results,key=lambda x:x['score'],reverse=True)
                 if results:
-                    txt=f"🚀 V17 ANTI-PUCUK PAGI 09:15 {today_str}\n{len(results)} SAHAM PASTI 80%+ VOL RAME!\n\n"
+                    txt=f"🚀 V18 ANTI-HILANG PAGI 09:15 {today_str}\n{len(results)} SAHAM PASTI 80%+ VOL RAME!\n\n"
                     for i,r in enumerate(results[:5],1):
                         txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% Vol {r['vol']:.1f}x\n   KLO ADA MASUK AJA! /pagi {r['symbol'].lower()}.jk\n\n"
                     txt+="🚀 GAS MASUK! KLO ADA MASUK AJA!"
                 else:
-                    txt=f"☕ PAGI {today_str} 09:15 - V17 ANTI-PUCUK\nGak ada yang PASTI 80%+ pagi ini. Market belum kuat + volume rame.\nJaga modal! Cek /scan"
+                    txt=f"☕ PAGI {today_str} 09:15 - V18 ANTI-HILANG\nGak ada yang PASTI 80%+ pagi ini. Market belum kuat + volume rame.\nJaga modal! Cek /scan"
                 for cid in list(CHAT_IDS):
                     try: bot.send_message(cid, txt)
                     except: pass
@@ -257,12 +286,12 @@ def auto_notif_loop():
                     if r: results.append(r)
                 results=sorted(results,key=lambda x:x['score'],reverse=True)
                 if results:
-                    txt=f"🔥 V17 ANTI-PUCUK SORE 15:30 {today_str}\n{len(results)} SAHAM PASTI 80%+!\n\n"
+                    txt=f"🔥 V18 ANTI-HILANG SORE 15:30 {today_str}\n{len(results)} SAHAM PASTI 80%+!\n\n"
                     for i,r in enumerate(results[:5],1):
                         txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% RSI {r['rsi']:.0f}\n   /sore {r['symbol'].lower()}.jk\n\n"
                     txt+="🚀 GAS SORE! KLO ADA MASUK AJA!"
                 else:
-                    txt=f"🌇 SORE {today_str} 15:30 - V17 ANTI-PUCUK\nGak ada yang PASTI 80%+ sore ini.\nBesok pagi cek lagi! /scan"
+                    txt=f"🌇 SORE {today_str} 15:30 - V18 ANTI-HILANG\nGak ada yang PASTI 80%+ sore ini.\nBesok pagi cek lagi! /scan"
                 for cid in list(CHAT_IDS):
                     try: bot.send_message(cid, txt)
                     except: pass
@@ -298,7 +327,7 @@ def handle_modes(message):
 @bot.message_handler(commands=['start','help'])
 def handle_help(message):
     save_chat_id(message.chat.id)
-    bot.reply_to(message,"V17 ANTI-PUCUK MODE 🔥\nHanya yang 80%+ & Vol rame!\n\n/pasti BRMS.JK - cek apakah PASTI 80%+\n/pagi BRMS.JK - mode pagi\n/sore BRMS.JK - mode sore\n/scan pasti - hanya 80%+ pasti\n/scan - semua 70%+\n\nAuto 09:15 & 15:30 hanya ngasih yang PASTI!")
+    bot.reply_to(message,"V18 ANTI-HILANG MODE 🔥\nHanya yang 80%+ & Vol rame!\n\n/pasti BRMS.JK - cek apakah PASTI 80%+\n/pagi BRMS.JK - mode pagi\n/sore BRMS.JK - mode sore\n/scan pasti - hanya 80%+ pasti\n/scan - semua 70%+\n\nAuto 09:15 & 15:30 hanya ngasih yang PASTI!")
 @bot.message_handler(commands=['scan'])
 def handle_scan(message):
     save_chat_id(message.chat.id)
@@ -310,26 +339,37 @@ def handle_scan(message):
             try: min_price=int(a); break
             except: pass
     if pasti_mode:
-        loading=bot.reply_to(message,f"🔍 V17 ANTI-PUCUK Scanning 60 saham >{min_price} hanya 80%+ Vol>1.5x...")
+        loading=bot.reply_to(message,f"🔍 V18 ANTI-HILANG Scanning 60 saham >{min_price} hanya 80%+ Vol>1.5x...")
         try:
             results=[]
             for sym in WATCHLIST[:60]:
                 r=analyze_pasti(sym, min_price=min_price)
                 if r: results.append(r)
             results=sorted(results,key=lambda x:x['score'],reverse=True)
-            if not results:
-                txt=f"🔍 V17 ANTI-PUCUK >{min_price} - {datetime.datetime.now(WIB).strftime('%d %b %H:%M')}\nGak ada yang PASTI 80%+ hari ini.\n\nArtinya market belum ada yang bener-bener kuat + volume rame.\nMending jaga modal, cek /scan buat yang 70%+."
-            else:
-                txt=f"🔥 V17 ANTI-PUCUK 80%+ - {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nFilter >{min_price} | Vol>1.5x | RSI 50-68 | Total {len(results)}\n\n✅ YANG PASTI AJA ({len(results)}):\n"
+            is_market_closed = datetime.datetime.now(WIB).hour >= 16
+            if results:
+                save_sore_cache(results)
+                txt=f"🔥 V18 ANTI-HILANG 80%+ - {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nFilter >{min_price} | Vol>1.5x | RSI 50-68 | Total {len(results)}\n\n✅ YANG PASTI AJA ({len(results)}):\n"
                 for i,r in enumerate(results[:10],1):
                     txt+=f"{i}. {r['symbol']} - {r['close']:.0f} | {r['score']}% | RSI {r['rsi']:.0f} Vol {r['vol']:.1f}x\n   {r['reasons'][0] if r['reasons'] else ''}\n   /pasti {r['symbol'].lower()}.jk\n\n"
                 txt+="\nIni yang paling aman buat PAGI-SORE & SWING!"
+            else:
+                # coba load cache sore klo market tutup (bug ENRG sore muncul malem ilang)
+                if is_market_closed and LAST_SORE_CACHE:
+                    results = LAST_SORE_CACHE
+                    txt=f"🌙 V17 SORE CACHE - {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nMarket tutup, Vol ilang, ini hasil SORE tadi 15:30 (ANTI-HILANG):\n\n✅ SORE TADI ({len(results)}):\n"
+                    for i,r in enumerate(results[:10],1):
+                        txt+=f"{i}. {r['symbol']} - {r['close']:.0f} | {r['score']}% | RSI {r['rsi']:.0f} Vol {r['vol']:.1f}x\n   {r['reasons'][0] if r['reasons'] else ''}\n   /pasti {r['symbol'].lower()}.jk\n\n"
+                    txt+="\n⚠️ Vol malem ilang karena yfinance, tapi sore tadi PASTI!\nBesok cek lagi 09:15!"
+                else:
+                    txt=f"🔍 V18 ANTI-HILANG >{min_price} - {datetime.datetime.now(WIB).strftime('%d %b %H:%M')}\nGak ada yang PASTI 80%+ hari ini.\n\nArtinya market belum ada yang bener-bener kuat + volume rame.\nMending jaga modal, cek /scan buat yang 70%+."
             bot.reply_to(message,txt)
-            bot.delete_message(loading.chat.id,loading.message_id)
+            try: bot.delete_message(loading.chat.id,loading.message_id)
+            except: pass
         except Exception as e:
             bot.edit_message_text(f"Error: {e}"[:400],loading.chat.id,loading.message_id)
     else:
-        loading=bot.reply_to(message,f"🔍 V17 ANTI-PUCUK Scanning 60 saham >{min_price} 70%+...")
+        loading=bot.reply_to(message,f"🔍 V18 ANTI-HILANG Scanning 60 saham >{min_price} 70%+...")
         try:
             results=[]
             for sym in WATCHLIST[:60]:
@@ -354,9 +394,9 @@ def handle_scan(message):
                     results.append({'symbol':sym.replace('.JK',''), 'close':close, 'score':score, 'vol':vol, 'rsi':rsi, 'reasons':reasons})
             results=sorted(results,key=lambda x:x['score'],reverse=True)
             if not results:
-                txt=f"🔍 V17 ANTI-PUCUK >{min_price} {datetime.datetime.now(WIB).strftime('%d %b %H:%M')}\nGak ada 70%+ ANTI-PUCUK hari ini.\nMarket banyak pucuk/distribution."
+                txt=f"🔍 V18 ANTI-HILANG >{min_price} {datetime.datetime.now(WIB).strftime('%d %b %H:%M')}\nGak ada 70%+ ANTI-HILANG hari ini.\nMarket banyak pucuk/distribution."
             else:
-                txt=f"🔥 V17 ANTI-PUCUK SCAN 70%+ - {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nTotal {len(results)} (udah filter pucuk)\n\n"
+                txt=f"🔥 V18 ANTI-HILANG SCAN 70%+ - {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nTotal {len(results)} (udah filter pucuk)\n\n"
                 for i,r in enumerate(results[:15],1):
                     tag="🔥 PASTI" if r['score']>=80 else "⚡"
                     txt+=f"{i}. {tag} {r['symbol']} {r['close']:.0f} {r['score']}% Vol {r['vol']:.1f}x\n   {r['reasons'][0] if r['reasons'] else ''}\n   /pagi {r['symbol'].lower()}.jk\n\n"
@@ -368,7 +408,7 @@ def handle_scan(message):
 if __name__=="__main__":
     start_anti_tidur()
     start_auto()
-    print("Bot V17 ANTI-PUCUK 100% PASTI running...")
+    print("Bot V18 ANTI-HILANG CACHE PASTI running...")
     try:
         bot.remove_webhook()
         time.sleep(2)
