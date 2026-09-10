@@ -102,11 +102,11 @@ start_time=time.time()
 @app.route('/')
 def home():
     uptime=int(time.time()-start_time)
-    return f"Bot V25 ENTRY SIGNAL 09:15 12:00 15:30 - Uptime {uptime//3600}h {(uptime%3600)//60}m {datetime.datetime.now(WIB).strftime('%H:%M:%S WIB')}"
+    return f"Bot V26 TOP3 ONLY FILTER KETAT - Uptime {uptime//3600}h {(uptime%3600)//60}m {datetime.datetime.now(WIB).strftime('%H:%M:%S WIB')}"
 @app.route('/health')
-def health(): return "OK V25 ENTRY SIGNAL",200
+def health(): return "OK V26 TOP3 ONLY",200
 @app.route('/ping')
-def ping(): return "pong V25 ENTRY SIGNAL",200
+def ping(): return "pong V26 TOP3 ONLY",200
 def run_flask(): app.run(host='0.0.0.0',port=8080)
 def keep_alive():
     t=threading.Thread(target=run_flask); t.daemon=True; t.start()
@@ -226,7 +226,7 @@ def generate_chart_fixed(df,symbol,mode="PASTI"):
     plt.tight_layout(); buf=io.BytesIO(); plt.savefig(buf,format='png',dpi=180,bbox_inches='tight'); plt.close(fig); buf.seek(0)
     reason_txt="\n".join([f"- {r}" for r in reasons[:5]])
     swing_entry=float(last['Close']); swing_sl=bulet_idx(swing_entry*0.96); swing_tp1=bulet_idx(swing_entry*1.07); swing_tp2=bulet_idx(swing_entry*1.12); swing_tp3=bulet_idx(swing_entry*1.20)
-    cap=f"{plot_df.index[-1].strftime('%Y-%m-%d')} - {symbol.upper()} [{mode}] {pasti_tag}\nClose {float(last['Close']):.0f} | EMA5 {float(plot_df[f'EMA{ema_fast}'].iloc[-1]):.0f} EMA10 {float(plot_df[f'EMA{ema_mid}'].iloc[-1]):.0f} EMA20 {float(plot_df[f'EMA{ema_slow}'].iloc[-1]):.0f} RSI {float(last['RSI']):.1f} Vol {vol_ratio:.1f}x\nTrend {trend}\n\n{icon} PREDIKSI: {pred} {score}% {pasti_tag}\n{reason_txt}\n\nENTRY {swing_entry} | SL {swing_sl} (-4%)\nTP1 {swing_tp1} (+7%) TP2 {swing_tp2} (+12%) TP3 {swing_tp3} (+20%)\nV25 ENTRY SIGNAL"
+    cap=f"{plot_df.index[-1].strftime('%Y-%m-%d')} - {symbol.upper()} [{mode}] {pasti_tag}\nClose {float(last['Close']):.0f} | EMA5 {float(plot_df[f'EMA{ema_fast}'].iloc[-1]):.0f} EMA10 {float(plot_df[f'EMA{ema_mid}'].iloc[-1]):.0f} EMA20 {float(plot_df[f'EMA{ema_slow}'].iloc[-1]):.0f} RSI {float(last['RSI']):.1f} Vol {vol_ratio:.1f}x\nTrend {trend}\n\n{icon} PREDIKSI: {pred} {score}% {pasti_tag}\n{reason_txt}\n\nENTRY {swing_entry} | SL {swing_sl} (-4%)\nTP1 {swing_tp1} (+7%) TP2 {swing_tp2} (+12%) TP3 {swing_tp3} (+20%)\nV26 TOP3 ONLY"
     return buf,cap
 def analyze_pasti(symbol, min_price=50, mode="PASTI"):
     try:
@@ -331,12 +331,12 @@ def auto_notif_loop():
                     txt+="Gak ada PASTI 80%+ pagi ini.\n\n"
                 if results_bawah:
                     txt+=f"🟢 {len(results_bawah)} TOP3 100% ULTRA BAWAH:\n\n"
-                    for i,r in enumerate(results_bawah[:5],1):
+                    for i,r in enumerate(results_bawah[:3],1):
                         status = "✅ BELUM NAIK - ENTRY NOW" if r['pump3'] <= 2 else "⚠️ BARU NAIK DIKIT"
                         txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% Pump {r['pump3']:.0f}% RSI {r['rsi']:.0f} - {status}\n   /bawah {r['symbol'].lower()}.jk\n\n"
                 else:
                     txt+="Gak ada ULTRA BAWAH pagi ini.\n"
-                txt+="✅ GAS MASUK SEKARANG - BELUM TERLAMBAT!"
+                txt+="✅ CUMA TOP3! GAS MASUK SEKARANG!"
                 for cid in list(CHAT_IDS):
                     try: 
                         bot.send_message(cid, txt)
@@ -371,7 +371,7 @@ def auto_notif_loop():
                     txt+="Gak ada PASTI 80%+ siang ini.\n\n"
                 if results_bawah:
                     txt+=f"🟢 {len(results_bawah)} TOP3 100% SIANG BAWAH:\n\n"
-                    for i,r in enumerate(results_bawah[:5],1):
+                    for i,r in enumerate(results_bawah[:3],1):
                         status = "✅ BELUM NAIK - ENTRY NOW" if r['pump3'] <= 2 else "⚠️ BARU NAIK DIKIT"
                         txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% Pump {r['pump3']:.0f}% Dist {r['dist20']:.0f}% - {status}\n   /bawah {r['symbol'].lower()}.jk\n\n"
                 txt+="✅ GAS MASUK SEKARANG - BELUM TERLAMBAT!"
@@ -408,7 +408,7 @@ def auto_notif_loop():
                     txt+="Gak ada PASTI 80%+ sore ini.\n\n"
                 if results_bawah:
                     txt+=f"🟢 {len(results_bawah)} TOP3 100% SUPER DI BAWAH:\n\n"
-                    for i,r in enumerate(results_bawah[:5],1):
+                    for i,r in enumerate(results_bawah[:3],1):
                         txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% Pump {r['pump3']:.0f}% Dist {r['dist20']:.0f}%\n   /bawah {r['symbol'].lower()}.jk\n\n"
                 txt+="✅ GAS MASUK SEKARANG - BELUM TERLAMBAT!"
                 for cid in list(CHAT_IDS):
@@ -453,7 +453,7 @@ def handle_modes(message):
 @bot.message_handler(commands=['start','help'])
 def handle_help(message):
     save_chat_id(message.chat.id)
-    bot.reply_to(message,"V25 ENTRY SIGNAL 09:15 12:00 15:30 🔥\n/pasti BRMS.JK - cek PASTI 80%+\n/bawah BRMS.JK - cek masih bawah? (early)\n/scan pasti - 80%+ pasti\n/scan bawah - TOP3 100% WAJIB Pump<10%\n/scan - semua 70%+\nAuto 09:15, 12:00, 15:30 TOP3 100% | /testnotif /ceknotif")
+    bot.reply_to(message,"V26 TOP3 ONLY 09:15 12:00 15:30 🔥\n/pasti BRMS.JK - cek PASTI 80%+\n/bawah BRMS.JK - cek masih bawah? (early)\n/scan pasti - 80%+ pasti\n/scan bawah - TOP3 100% WAJIB Pump<10%\n/scan - semua 70%+\nAuto 09:15, 12:00, 15:30 TOP3 100% | /testnotif /ceknotif")
 
 @bot.message_handler(commands=['testnotif','ceknotif','cekid'])
 def handle_testnotif(message):
@@ -474,7 +474,7 @@ def handle_scan(message):
             try: min_price=int(a); break
             except: pass
     if bawah_mode:
-        loading=bot.reply_to(message,f"🔍 V25 ENTRY SIGNAL Scanning >{min_price} Pump<10%...")
+        loading=bot.reply_to(message,f"🔍 V26 TOP3 ONLY Scanning >{min_price} Pump<10%...")
         try:
             results=[]
             for sym in WATCHLIST[:60]:
@@ -487,21 +487,25 @@ def handle_scan(message):
                 if results[idx]['score'] < 95:
                     results[idx]['score']=95
             if results:
-                txt=f"🟢 V25 ENTRY SIGNAL - MASIH DI BAWAH - BELUM NAIK! {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n✅ BOLEH MASUK SEKARANG! Pump3<10% Pump5<15% Wick<6% Dist20<8% RSI45-60 Total {len(results)}\n\n"
-                for i,r in enumerate(results[:15],1):
+                # FILTER KETAT TOP3 ONLY
+                results_filtered = [r for r in results if r['vol']>=0.9 and r['pump3']<=3][:3]
+                if not results_filtered:
+                    results_filtered = results[:3]
+                txt=f"🟢 V26 TOP3 ONLY - MASIH DI BAWAH - BELUM NAIK! {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n✅ FILTER KETAT - CUMA TOP3 TERBAIK! Dari {len(results)} -> Ambil {len(results_filtered)}\nPump3<10% Pump5<15% Wick<6% Dist20<8% RSI45-60\n\n"
+                for i,r in enumerate(results_filtered,1):
                     # Determine entry status
                     status = "✅ BELUM NAIK - MASUK SEKARANG" if r['pump3'] <= 2 else "⚠️ UDAH NAIK DIKIT - MASIH BOLEH MASUK"
                     txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% Pump {r['pump3']:.0f}% RSI {r['rsi']:.0f} Vol {r['vol']:.1f}x Dist20 {r['dist20']:.0f}%\n   {status}\n   {r['reasons'][0] if r['reasons'] else ''}\n   /bawah {r['symbol'].lower()}.jk\n\n"
-                txt+="✅ INI SAATNYA MASUK! BELUM NAIK TINGGI! TOP3 100%!"
+                txt+="✅ CUMA 3 SAHAM TERBAIK! BUKAN 10! FILTER KETAT TOP3 100%!"
             else:
-                txt=f"🔍 V25 ENTRY SIGNAL >{min_price} - Gak ada ULTRA BAWAH hari ini, filter ketat!"
+                txt=f"🔍 V26 TOP3 ONLY >{min_price} - Gak ada ULTRA BAWAH hari ini, filter ketat!"
             bot.reply_to(message,txt)
             try: bot.delete_message(loading.chat.id,loading.message_id)
             except: pass
         except Exception as e:
             bot.edit_message_text(f"Error: {e}"[:400],loading.chat.id,loading.message_id)
     elif pasti_mode:
-        loading=bot.reply_to(message,f"🔍 V25 ENTRY SIGNAL Scanning >{min_price} 80%+...")
+        loading=bot.reply_to(message,f"🔍 V26 TOP3 ONLY Scanning >{min_price} 80%+...")
         try:
             results=[]
             for sym in WATCHLIST[:60]:
@@ -514,19 +518,23 @@ def handle_scan(message):
                 if results[idx]['score'] < 95:
                     results[idx]['score']=95
             if results:
-                txt=f"🔥 V25 ENTRY SIGNAL 80%+ - SIAP MASUK! {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n✅ BELUM NAIK TINGGI - MASUK SEKARANG! Total {len(results)}\n\n"
-                for i,r in enumerate(results[:10],1):
+                # FILTER KETAT: Only TOP3, Vol>=1.0, RSI 50-62
+                results_filtered = [r for r in results if r['vol']>=1.0 and 50 <= r['rsi'] <= 62][:3]
+                if not results_filtered:
+                    results_filtered = results[:3]
+                txt=f"🔥 V26 TOP3 ONLY 80%+ - SIAP MASUK! {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n✅ FILTER KETAT - CUMA TOP3 TERBAIK! Total {len(results)} -> Ambil {len(results_filtered)}\n\n"
+                for i,r in enumerate(results_filtered,1):
                     txt+=f"{i}. {r['symbol']} - {r['close']:.0f} | {r['score']}% RSI {r['rsi']:.0f} Vol {r['vol']:.1f}x\n   {r['reasons'][0] if r['reasons'] else ''}\n   /pasti {r['symbol'].lower()}.jk\n\n"
                 txt+="Ini yang paling aman!"
             else:
-                txt=f"🔍 V25 ENTRY SIGNAL >{min_price} Gak ada yang PASTI 80%+ hari ini. Cek /scan bawah"
+                txt=f"🔍 V26 TOP3 ONLY >{min_price} Gak ada yang PASTI 80%+ hari ini. Cek /scan bawah"
             bot.reply_to(message,txt)
             try: bot.delete_message(loading.chat.id,loading.message_id)
             except: pass
         except Exception as e:
             bot.edit_message_text(f"Error: {e}"[:400],loading.chat.id,loading.message_id)
     else:
-        loading=bot.reply_to(message,f"🔍 V25 ENTRY SIGNAL Scanning >{min_price} 70%+...")
+        loading=bot.reply_to(message,f"🔍 V26 TOP3 ONLY Scanning >{min_price} 70%+...")
         try:
             results=[]
             for sym in WATCHLIST[:60]:
@@ -543,10 +551,10 @@ def handle_scan(message):
                 if results[idx]['score'] < 95:
                     results[idx]['score']=95
             if not results:
-                txt=f"🔍 V25 ENTRY SIGNAL >{min_price} Gak ada 70%+ hari ini. Coba /scan bawah"
+                txt=f"🔍 V26 TOP3 ONLY >{min_price} Gak ada 70%+ hari ini. Coba /scan bawah"
             else:
-                txt=f"🔥 V25 ENTRY SIGNAL SCAN 70%+ - {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nTotal {len(results)}\n\n"
-                for i,r in enumerate(results[:15],1):
+                txt=f"🔥 V26 TOP3 ONLY SCAN 70%+ - {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nTotal {len(results)} -> Cuma TOP3\n\n"
+                for i,r in enumerate(results[:3],1):
                     tag="PASTI" if r['score']>=80 else ""
                     txt+=f"{i}. {tag} {r['symbol']} {r['close']:.0f} {r['score']}% Vol {r['vol']:.1f}x\n   {r['reasons'][0] if r['reasons'] else ''}\n   /pagi {r['symbol'].lower()}.jk\n\n"
                 txt+="Cek /scan bawah buat yang masih dibawah!"
@@ -559,7 +567,7 @@ def handle_scan(message):
 if __name__=="__main__":
     start_anti_tidur()
     start_auto()
-    print("Bot V25 ENTRY SIGNAL 09:15 12:00 15:30 running...")
+    print("Bot V26 TOP3 ONLY FILTER KETAT running...")
     try:
         bot.remove_webhook()
         time.sleep(2)
