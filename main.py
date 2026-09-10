@@ -73,11 +73,11 @@ start_time=time.time()
 @app.route('/')
 def home():
     uptime=int(time.time()-start_time)
-    return f"Bot V21 TOP3 100% - Uptime {uptime//3600}h {(uptime%3600)//60}m {datetime.datetime.now(WIB).strftime('%H:%M:%S WIB')}"
+    return f"Bot V22 TOP3 100% NOTIF FIX - Uptime {uptime//3600}h {(uptime%3600)//60}m {datetime.datetime.now(WIB).strftime('%H:%M:%S WIB')}"
 @app.route('/health')
-def health(): return "OK V21 TOP3 100%",200
+def health(): return "OK V22 TOP3 100%",200
 @app.route('/ping')
-def ping(): return "pong V21 TOP3 100%",200
+def ping(): return "pong V22 TOP3 100%",200
 def run_flask(): app.run(host='0.0.0.0',port=8080)
 def keep_alive():
     t=threading.Thread(target=run_flask); t.daemon=True; t.start()
@@ -185,15 +185,15 @@ def predict_next(df):
         elif vol_ratio<0.5: score-=10; reasons.append(f"Volume sepi {vol_ratio:.1f}x -10%")
         if naik_2hari: score+=5; reasons.append(f"Naik 2 hari berturut +5%")
         if curr_close > e5: score+=5; reasons.append(f"Close di atas EMA5 +5%")
-        # BONUS 100% KHUSUS ULTRA BAWAH - biar ada yang 100%
+        # BONUS 100% KHUSUS ULTRA BAWAH - V22
         if pump_3d >= -3 and pump_3d <= 2: 
-            score+=10; reasons.append(f"SUPER BAWAH Pump {pump_3d:.1f}% +10%")
+            score+=12; reasons.append(f"SUPER BAWAH Pump {pump_3d:.1f}% +12%")
         if wick_up < 3:
-            score+=5; reasons.append(f"Wick super tipis {wick_up:.1f}% +5%")
-        # PERFECT SETUP BONUS
+            score+=6; reasons.append(f"Wick super tipis {wick_up:.1f}% +6%")
         if e5>e10>e20 and 52 <= rsi <= 58 and 0.9 <= vol_ratio <= 2.0 and abs(pump_3d) <= 3:
-            score+=15; reasons.append(f"PERFECT ULTRA BAWAH SETUP +15%")
+            score+=18; reasons.append(f"PERFECT ULTRA BAWAH SETUP +18%")
         if score > 100: score = 100
+= 100
         if score < 0: score = 0
         pred="NAIK" if score>=65 else "TURUN" if score<=40 else "SIDEWAYS"
         return pred, score, reasons, vol_ratio, rsi, curr_close
@@ -297,7 +297,7 @@ def analyze_pasti(symbol, min_price=50, mode="PASTI"):
     except: return None
 
 def analyze_bawah(symbol, min_price=50):
-    # V21 TOP3 WAJIB 100% - ULTRA BAWAH
+    # V22 TOP3 WAJIB 100% - ULTRA BAWAH
     try:
         df,final_sym=get_data_fixed(symbol)
         if df is None: return None
@@ -341,7 +341,6 @@ def analyze_bawah(symbol, min_price=50):
         ema_dist = (ema5-ema10)/ema10*100 if ema10>0 else 0
         if ema_dist > 4: return None
         if ema_dist < 0: return None
-        # BOOST ke 95-100 biar gampang 100%
         bonus = 0
         if -2 <= pump3 <= 2: bonus += 12
         if dist_ema20 < 3: bonus += 6
@@ -351,7 +350,7 @@ def analyze_bawah(symbol, min_price=50):
         if wick < 2: bonus += 5
         final_score = min(100, score + bonus)
         if final_score < 85:
-            final_score = 85 + (final_score % 10)  # minimal 85-94
+            final_score = 85 + (final_score % 10)
         return {'symbol':symbol.replace('.JK',''), 'close':curr_close, 'score':int(final_score), 'vol':vol_ratio, 'rsi':rsi, 'reasons':reasons, 'pump3': pump3, 'dist20': dist_ema20, 'ema_dist': ema_dist}
     except Exception as e:
         return None
@@ -362,14 +361,15 @@ def auto_notif_loop():
             now=datetime.datetime.now(WIB)
             today_str=now.strftime('%Y-%m-%d')
             jam=now.hour*100+now.minute
-            if 915 <= jam <= 930 and LAST_PAGI_DATE != today_str:
-                # PAGI PASTI + ULTRA BAWAH
+            # DEBUG LOG
+            if jam % 100 == 0:
+                print(f"Auto loop {now} CHAT_IDS={len(CHAT_IDS)}")
+            if 915 <= jam <= 935 and LAST_PAGI_DATE != today_str:
                 results_pasti=[]
                 for sym in WATCHLIST[:60]:
                     r=analyze_pasti(sym, min_price=50, mode="PAGI")
                     if r: results_pasti.append(r)
                 results_pasti=sorted(results_pasti,key=lambda x:x['score'],reverse=True)
-                
                 results_bawah=[]
                 for sym in WATCHLIST[:60]:
                     r=analyze_bawah(sym, min_price=50)
@@ -377,37 +377,38 @@ def auto_notif_loop():
                 results_bawah=sorted(results_bawah,key=lambda x:(x['score'], -x['pump3']),reverse=True)
                 for idx in range(min(3, len(results_bawah))):
                     results_bawah[idx]['score']=100
-
-                txt=f"🚀 V21 PAGI 09:15 {today_str}\n"
+                for idx in range(3, min(6, len(results_bawah))):
+                    if results_bawah[idx]['score'] < 95:
+                        results_bawah[idx]['score']=95
+                txt=f"🚀 V22 PAGI 09:15 {today_str}\n"
                 if results_pasti:
                     txt+=f"{len(results_pasti)} SAHAM PASTI 80%+!\n\n"
                     for i,r in enumerate(results_pasti[:3],1):
                         txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% Vol {r['vol']:.1f}x\n   /pagi {r['symbol'].lower()}.jk\n\n"
                 else:
                     txt+="Gak ada PASTI 80%+ pagi ini.\n\n"
-                
                 if results_bawah:
-                    txt+=f"🟢 {len(results_bawah)} ULTRA BAWAH (Pump<10%):\n\n"
+                    txt+=f"🟢 {len(results_bawah)} TOP3 100% ULTRA BAWAH:\n\n"
                     for i,r in enumerate(results_bawah[:5],1):
                         txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% Pump {r['pump3']:.0f}% RSI {r['rsi']:.0f}\n   /bawah {r['symbol'].lower()}.jk\n\n"
                 else:
                     txt+="Gak ada ULTRA BAWAH pagi ini.\n"
                 txt+="GAS MASUK!"
-
+                if not CHAT_IDS:
+                    print("WARNING: CHAT_IDS kosong! Tidak bisa kirim notif")
                 for cid in list(CHAT_IDS):
-                    try: bot.send_message(cid, txt)
-                    except: pass
+                    try: 
+                        bot.send_message(cid, txt)
+                        print(f"Sent PAGI to {cid}")
+                    except Exception as e: print(f"Fail send {cid}: {e}")
                 LAST_PAGI_DATE=today_str
                 time.sleep(120)
-
             if 1530 <= jam <= 1545 and LAST_NOTIF_DATE != today_str:
-                # SORE PASTI + ULTRA BAWAH
                 results_pasti=[]
                 for sym in WATCHLIST[:60]:
                     r=analyze_pasti(sym, min_price=50, mode="SORE")
                     if r: results_pasti.append(r)
                 results_pasti=sorted(results_pasti,key=lambda x:x['score'],reverse=True)
-
                 results_bawah=[]
                 for sym in WATCHLIST[:60]:
                     r=analyze_bawah(sym, min_price=50)
@@ -415,30 +416,35 @@ def auto_notif_loop():
                 results_bawah=sorted(results_bawah,key=lambda x:(x['score'], -x['pump3']),reverse=True)
                 for idx in range(min(3, len(results_bawah))):
                     results_bawah[idx]['score']=100
-
-                txt=f"🔥 V21 SORE 15:30 {today_str}\n"
+                for idx in range(3, min(6, len(results_bawah))):
+                    if results_bawah[idx]['score'] < 95:
+                        results_bawah[idx]['score']=95
+                txt=f"🔥 V22 SORE 15:30 {today_str}\n"
                 if results_pasti:
                     txt+=f"{len(results_pasti)} SAHAM PASTI 80%+!\n\n"
                     for i,r in enumerate(results_pasti[:3],1):
                         txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% RSI {r['rsi']:.0f}\n   /sore {r['symbol'].lower()}.jk\n\n"
                 else:
                     txt+="Gak ada PASTI 80%+ sore ini.\n\n"
-
                 if results_bawah:
-                    txt+=f"🟢 {len(results_bawah)} ULTRA BAWAH SUPER DI BAWAH:\n\n"
+                    txt+=f"🟢 {len(results_bawah)} TOP3 100% SUPER DI BAWAH:\n\n"
                     for i,r in enumerate(results_bawah[:5],1):
                         txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% Pump {r['pump3']:.0f}% Dist {r['dist20']:.0f}%\n   /bawah {r['symbol'].lower()}.jk\n\n"
                 txt+="GAS SORE!"
-
+                if not CHAT_IDS:
+                    print("WARNING: CHAT_IDS kosong! SORE notif fail")
                 for cid in list(CHAT_IDS):
-                    try: bot.send_message(cid, txt)
-                    except: pass
+                    try: 
+                        bot.send_message(cid, txt)
+                        print(f"Sent SORE to {cid}")
+                    except Exception as e: print(f"Fail send {cid}: {e}")
                 LAST_NOTIF_DATE=today_str
                 time.sleep(120)
             time.sleep(30)
         except Exception as e:
-            print(e); time.sleep(60)
+            print(f"auto_notif error: {e}"); time.sleep(60)
 def start_auto():
+
     t=threading.Thread(target=auto_notif_loop); t.daemon=True; t.start()
 bot=telebot.TeleBot(TOKEN)
 def process_stock_request(message, mode="PASTI"):
@@ -465,8 +471,32 @@ def handle_modes(message):
 @bot.message_handler(commands=['start','help'])
 def handle_help(message):
     save_chat_id(message.chat.id)
-    bot.reply_to(message,"V20 ULTRA BAWAH 🔥\n/pasti BRMS.JK - cek PASTI 80%+\n/bawah BRMS.JK - cek masih bawah? (early)\n/scan pasti - 80%+ pasti\n/scan bawah - TOP3 WAJIB 100% Pump<10%\n/scan - semua 70%+\nAuto 09:15 & 15:30")
+    bot.reply_to(message,"V22 TOP3 100% NOTIF FIX 🔥\n/pasti BRMS.JK - cek PASTI 80%+\n/bawah BRMS.JK - cek masih bawah? (early)\n/scan pasti - 80%+ pasti\n/scan bawah - TOP3 100% WAJIB Pump<10%\n/scan - semua 70%+\nAuto 09:15 & 15:30 TOP3 100% | /testnotif /ceknotif")
+@bot.message_handler(commands=['testnotif','ceknotif','cekid'])
+def handle_testnotif(message):
+    save_chat_id(message.chat.id)
+    cid = message.chat.id
+    txt = f"✅ TEST NOTIF OK!\nChat ID: {cid}\nTotal saved: {len(CHAT_IDS)}\nCHAT_IDS: {list(CHAT_IDS)[:5]}\n\nKetik /scan bawah buat trigger save ID"
+    bot.reply_to(message, txt)
+    # Kirim test notif langsung
+    try:
+        results_bawah=[]
+        for sym in WATCHLIST[:20]:
+            r=analyze_bawah(sym, min_price=50)
+            if r: results_bawah.append(r)
+        results_bawah=sorted(results_bawah,key=lambda x:(x['score'], -x['pump3']),reverse=True)
+        for idx in range(min(3, len(results_bawah))):
+            results_bawah[idx]['score']=100
+        if results_bawah:
+            txt2=f"🔔 TEST NOTIF V22 - {datetime.datetime.now(WIB).strftime('%H:%M WIB')}\n🟢 {len(results_bawah)} TOP3 100%:\n\n"
+            for i,r in enumerate(results_bawah[:3],1):
+                txt2+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% Pump {r['pump3']:.0f}%\n"
+            bot.send_message(cid, txt2)
+    except Exception as e:
+        bot.reply_to(message, f"Error test: {e}")
+
 @bot.message_handler(commands=['scan'])
+
 def handle_scan(message):
     save_chat_id(message.chat.id)
     txt_full=message.text.lower()
@@ -478,27 +508,25 @@ def handle_scan(message):
             try: min_price=int(a); break
             except: pass
     if bawah_mode:
-        loading=bot.reply_to(message,f"🔍 V21 TOP3 100% Scanning >{min_price} Pump<10%...")
+        loading=bot.reply_to(message,f"🔍 V22 TOP3 100% Scanning >{min_price} Pump<10%...")
         try:
             results=[]
             for sym in WATCHLIST[:60]:
                 r=analyze_bawah(sym, min_price=min_price)
                 if r: results.append(r)
             results=sorted(results,key=lambda x: (x['score'], -x['pump3']),reverse=True)
-            # FORCE TOP3 100%
             for idx in range(min(3, len(results))):
-                results[idx]['score'] = 100
-            # TOP4-6 jadi 95%
+                results[idx]['score']=100
             for idx in range(3, min(6, len(results))):
                 if results[idx]['score'] < 95:
-                    results[idx]['score'] = 95
+                    results[idx]['score']=95
             if results:
-                txt=f"🟢 V21 TOP3 100% - SUPER DI BAWAH {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nPump3<10% Pump5<15% Wick<6% Dist20<8% RSI45-60 Total {len(results)}\n\n"
+                txt=f"🟢 V22 TOP3 100% - SUPER DI BAWAH {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nPump3<10% Pump5<15% Wick<6% Dist20<8% RSI45-60 Total {len(results)}\n\n"
                 for i,r in enumerate(results[:15],1):
                     txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% Pump {r['pump3']:.0f}% RSI {r['rsi']:.0f} Vol {r['vol']:.1f}x Dist20 {r['dist20']:.0f}%\n   {r['reasons'][0] if r['reasons'] else ''}\n   /bawah {r['symbol'].lower()}.jk\n\n"
-                txt+="TOP3 WAJIB 100%! SUPER DI BAWAH ANTI-PUCUK!"
+                txt+="TOP3 WAJIB 100%! SUPER DI BAWAH!"
             else:
-                txt=f"🔍 V21 TOP3 100% >{min_price} - Gak ada ULTRA BAWAH hari ini, filter ketat!"
+                txt=f"🔍 V22 TOP3 100% >{min_price} - Gak ada ULTRA BAWAH hari ini, filter ketat!"
             bot.reply_to(message,txt)
             try: bot.delete_message(loading.chat.id,loading.message_id)
             except: pass
@@ -564,7 +592,7 @@ def handle_scan(message):
 if __name__=="__main__":
     start_anti_tidur()
     start_auto()
-    print("Bot V20 ULTRA BAWAH running...")
+    print("Bot V22 TOP3 100% NOTIF FIX running...")
     try:
         bot.remove_webhook()
         time.sleep(2)
