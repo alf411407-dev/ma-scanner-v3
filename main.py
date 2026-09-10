@@ -73,11 +73,11 @@ start_time=time.time()
 @app.route('/')
 def home():
     uptime=int(time.time()-start_time)
-    return f"Bot V20 ULTRA BAWAH ANTI-PUCUK - Uptime {uptime//3600}h {(uptime%3600)//60}m {datetime.datetime.now(WIB).strftime('%H:%M:%S WIB')}"
+    return f"Bot V19 BAWAH ANTI-PUCUK - Uptime {uptime//3600}h {(uptime%3600)//60}m {datetime.datetime.now(WIB).strftime('%H:%M:%S WIB')}"
 @app.route('/health')
-def health(): return "OK V20 ULTRA BAWAH",200
+def health(): return "OK V19 BAWAH",200
 @app.route('/ping')
-def ping(): return "pong V20 ULTRA BAWAH",200
+def ping(): return "pong V19 BAWAH",200
 def run_flask(): app.run(host='0.0.0.0',port=8080)
 def keep_alive():
     t=threading.Thread(target=run_flask); t.daemon=True; t.start()
@@ -185,8 +185,6 @@ def predict_next(df):
         elif vol_ratio<0.5: score-=10; reasons.append(f"Volume sepi {vol_ratio:.1f}x -10%")
         if naik_2hari: score+=5; reasons.append(f"Naik 2 hari berturut +5%")
         if curr_close > e5: score+=5; reasons.append(f"Close di atas EMA5 +5%")
-        if score > 100: score = 100
-        if score < 0: score = 0
         pred="NAIK" if score>=65 else "TURUN" if score<=40 else "SIDEWAYS"
         return pred, score, reasons, vol_ratio, rsi, curr_close
     except Exception as e:
@@ -289,60 +287,7 @@ def analyze_pasti(symbol, min_price=50, mode="PASTI"):
     except: return None
 
 def analyze_bawah(symbol, min_price=50):
-    # V20 ULTRA BAWAH - FILTER SUPER KETAT ANTI-PUCUK
-    try:
-        df,final_sym=get_data_fixed(symbol)
-        if df is None: return None
-        pred,score,reasons,vol_ratio,rsi,curr_close=predict_next(df)
-        if curr_close < min_price: return None
-        if "NAIK" not in pred: return None
-        if score > 100: score = 100
-        df_flat=flatten_df(df.copy())
-        close=pd.Series(df_flat['Close']).dropna()
-        # PUMP FILTER ULTRA KETAT - HARUS MASIH DIBAWAH BANGET
-        if len(close)>=4:
-            c3 = float(close.iloc[-4])
-            pump3 = (curr_close-c3)/c3*100 if c3>0 else 0
-            if pump3 > 10: return None  # tadinya 18% -> sekarang 10% MAX!
-            if pump3 < -8: return None
-        else:
-            pump3 = 0
-        if len(close)>=6:
-            c5 = float(close.iloc[-6])
-            pump5 = (curr_close-c5)/c5*100 if c5>0 else 0
-            if pump5 > 15: return None  # tadinya 25% -> sekarang 15% MAX!
-        # WICK FILTER - GAK BOLEH ADA DISTRIBUSI
-        try:
-            high = float(df_flat['High'].iloc[-1])
-            low = float(df_flat['Low'].iloc[-1])
-            wick = (high-curr_close)/curr_close*100 if curr_close>0 else 0
-            body = abs(curr_close - float(df_flat['Open'].iloc[-1]))/curr_close*100 if curr_close>0 else 0
-            if wick > 6: return None  # tadinya 10% -> sekarang 6% MAX!
-            if wick > body*2: return None  # wick gak boleh lebih dari 2x body
-        except: 
-            wick = 0
-        # DIST EMA20 - HARUS DEKET EMA20, JANGAN JAUH
-        ema20 = float(calc_ema(close,20).iloc[-1])
-        ema10 = float(calc_ema(close,10).iloc[-1])
-        ema5 = float(calc_ema(close,5).iloc[-1])
-        dist_ema20 = abs(curr_close-ema20)/ema20*100 if ema20>0 else 100
-        dist_ema10 = abs(curr_close-ema10)/ema10*100 if ema10>0 else 100
-        if dist_ema20 > 8: return None  # tadinya 12% -> sekarang 8% MAX!
-        if dist_ema10 > 5: return None  # TAMBAHAN BARU - harus deket EMA10 juga
-        if curr_close > ema5*1.05: return None  # jangan jauh di atas EMA5
-        # RSI FILTER LEBIH KETAT
-        if not (45 <= rsi <= 60): return None  # tadinya 42-63 -> sekarang 45-60 IDEAL!
-        # SCORE & VOL FILTER
-        if score < 70: return None  # tadinya 65 -> sekarang 70
-        if vol_ratio < 0.8: return None
-        if vol_ratio > 3.0: return None  # volume kegedean = udah mau pucuk, skip!
-        # TAMBAHAN: EMA5 HARUS DI ATAS EMA10 DIKIT AJA, JANGAN JAUH (ANTI-PUCUK)
-        ema_dist = (ema5-ema10)/ema10*100 if ema10>0 else 0
-        if ema_dist > 4: return None  # kalo EMA5 jauh di atas EMA10 = udah naik tinggi
-        if ema_dist < 0: return None
-        return {'symbol':symbol.replace('.JK',''), 'close':curr_close, 'score':min(score,100), 'vol':vol_ratio, 'rsi':rsi, 'reasons':reasons, 'pump3': pump3, 'dist20': dist_ema20, 'ema_dist': ema_dist}
-    except Exception as e:
-        return None
+    return analyze_pasti(symbol, min_price, mode="BAWAH")
 def auto_notif_loop():
     global LAST_NOTIF_DATE, LAST_PAGI_DATE
     while True:
@@ -416,7 +361,7 @@ def handle_modes(message):
 @bot.message_handler(commands=['start','help'])
 def handle_help(message):
     save_chat_id(message.chat.id)
-    bot.reply_to(message,"V20 ULTRA BAWAH SUPER ANTI-PUCUK 🔥\n/pasti BRMS.JK - cek PASTI 80%+\n/bawah BRMS.JK - cek masih bawah? (early)\n/scan pasti - 80%+ pasti\n/scan bawah - ULTRA BAWAH 70%+ Pump<10% RSI45-60\n/scan - semua 70%+\nAuto 09:15 & 15:30")
+    bot.reply_to(message,"V19 BAWAH ANTI-PUCUK 🔥\n/pasti BRMS.JK - cek PASTI 80%+\n/bawah BRMS.JK - cek masih bawah? (early)\n/scan pasti - 80%+ pasti\n/scan bawah - YANG MASIH BAWAH 65%+ (ANTI-PUCUK)\n/scan - semua 70%+\nAuto 09:15 & 15:30")
 @bot.message_handler(commands=['scan'])
 def handle_scan(message):
     save_chat_id(message.chat.id)
@@ -429,7 +374,7 @@ def handle_scan(message):
             try: min_price=int(a); break
             except: pass
     if bawah_mode:
-        loading=bot.reply_to(message,f"🔍 V20 ULTRA BAWAH Scanning >{min_price} Pump<10% RSI45-60...")
+        loading=bot.reply_to(message,f"🔍 V19 BAWAH Scanning >{min_price} MASIH DI BAWAH 65%+...")
         try:
             results=[]
             for sym in WATCHLIST[:60]:
@@ -437,19 +382,19 @@ def handle_scan(message):
                 if r: results.append(r)
             results=sorted(results,key=lambda x: (x['score'], -x['pump3']),reverse=True)
             if results:
-                txt=f"🟢 V20 ULTRA BAWAH - SUPER DI BAWAH {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nPump3<10% Pump5<15% Wick<6% Dist20<8% RSI45-60 Total {len(results)}\n\n"
+                txt=f"🟢 V19 BAWAH - MASIH DI BAWAH {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nPump3<18% RSI42-63 DistEMA20<12% Total {len(results)}\n\n"
                 for i,r in enumerate(results[:15],1):
-                    txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% Pump {r['pump3']:.0f}% RSI {r['rsi']:.0f} Vol {r['vol']:.1f}x Dist20 {r['dist20']:.0f}% EMA {r.get('ema_dist',0):.1f}%\n   {r['reasons'][0] if r['reasons'] else ''}\n   /bawah {r['symbol'].lower()}.jk\n\n"
-                txt+="Ini yang MASIH SUPER DI BAWAH, ANTI-PUCUK TOTAL!"
+                    txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% Pump {r['pump3']:.0f}% RSI {r['rsi']:.0f} Vol {r['vol']:.1f}x Dist20 {r['dist20']:.0f}%\n   {r['reasons'][0] if r['reasons'] else ''}\n   /bawah {r['symbol'].lower()}.jk\n\n"
+                txt+="Ini yang masih di bawah, bukan pucuk!"
             else:
-                txt=f"🔍 V20 ULTRA BAWAH >{min_price} - Gak ada yang ULTRA BAWAH hari ini. Filter ketat banget!"
+                txt=f"🔍 V19 BAWAH >{min_price} - Gak ada yang masih di bawah 65%+ hari ini."
             bot.reply_to(message,txt)
             try: bot.delete_message(loading.chat.id,loading.message_id)
             except: pass
         except Exception as e:
             bot.edit_message_text(f"Error: {e}"[:400],loading.chat.id,loading.message_id)
     elif pasti_mode:
-        loading=bot.reply_to(message,f"🔍 V20 Scanning >{min_price} 80%+...")
+        loading=bot.reply_to(message,f"🔍 V19 Scanning >{min_price} 80%+...")
         try:
             results=[]
             for sym in WATCHLIST[:60]:
@@ -457,19 +402,19 @@ def handle_scan(message):
                 if r: results.append(r)
             results=sorted(results,key=lambda x:x['score'],reverse=True)
             if results:
-                txt=f"🔥 V20 80%+ - {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nTotal {len(results)}\n\n"
+                txt=f"🔥 V19 80%+ - {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nTotal {len(results)}\n\n"
                 for i,r in enumerate(results[:10],1):
                     txt+=f"{i}. {r['symbol']} - {r['close']:.0f} | {r['score']}% RSI {r['rsi']:.0f} Vol {r['vol']:.1f}x\n   {r['reasons'][0] if r['reasons'] else ''}\n   /pasti {r['symbol'].lower()}.jk\n\n"
                 txt+="Ini yang paling aman!"
             else:
-                txt=f"🔍 V20 >{min_price} Gak ada yang PASTI 80%+ hari ini. Cek /scan bawah"
+                txt=f"🔍 V19 >{min_price} Gak ada yang PASTI 80%+ hari ini. Cek /scan bawah"
             bot.reply_to(message,txt)
             try: bot.delete_message(loading.chat.id,loading.message_id)
             except: pass
         except Exception as e:
             bot.edit_message_text(f"Error: {e}"[:400],loading.chat.id,loading.message_id)
     else:
-        loading=bot.reply_to(message,f"🔍 V20 Scanning >{min_price} 70%+...")
+        loading=bot.reply_to(message,f"🔍 V19 Scanning >{min_price} 70%+...")
         try:
             results=[]
             for sym in WATCHLIST[:60]:
@@ -494,9 +439,9 @@ def handle_scan(message):
                     results.append({'symbol':sym.replace('.JK',''), 'close':close, 'score':score, 'vol':vol, 'rsi':rsi, 'reasons':reasons})
             results=sorted(results,key=lambda x:x['score'],reverse=True)
             if not results:
-                txt=f"🔍 V20 >{min_price} Gak ada 70%+ hari ini. Coba /scan bawah"
+                txt=f"🔍 V19 >{min_price} Gak ada 70%+ hari ini. Coba /scan bawah"
             else:
-                txt=f"🔥 V20 SCAN 70%+ - {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nTotal {len(results)}\n\n"
+                txt=f"🔥 V19 SCAN 70%+ - {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nTotal {len(results)}\n\n"
                 for i,r in enumerate(results[:15],1):
                     tag="PASTI" if r['score']>=80 else ""
                     txt+=f"{i}. {tag} {r['symbol']} {r['close']:.0f} {r['score']}% Vol {r['vol']:.1f}x\n   {r['reasons'][0] if r['reasons'] else ''}\n   /pagi {r['symbol'].lower()}.jk\n\n"
@@ -508,7 +453,7 @@ def handle_scan(message):
 if __name__=="__main__":
     start_anti_tidur()
     start_auto()
-    print("Bot V20 ULTRA BAWAH ANTI-PUCUK running...")
+    print("Bot V19 BAWAH ANTI-PUCUK running...")
     try:
         bot.remove_webhook()
         time.sleep(2)
