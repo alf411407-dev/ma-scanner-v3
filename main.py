@@ -185,6 +185,14 @@ def predict_next(df):
         elif vol_ratio<0.5: score-=10; reasons.append(f"Volume sepi {vol_ratio:.1f}x -10%")
         if naik_2hari: score+=5; reasons.append(f"Naik 2 hari berturut +5%")
         if curr_close > e5: score+=5; reasons.append(f"Close di atas EMA5 +5%")
+        # BONUS 100% KHUSUS ULTRA BAWAH - biar ada yang 100%
+        if pump_3d >= -3 and pump_3d <= 2: 
+            score+=10; reasons.append(f"SUPER BAWAH Pump {pump_3d:.1f}% +10%")
+        if wick_up < 3:
+            score+=5; reasons.append(f"Wick super tipis {wick_up:.1f}% +5%")
+        # PERFECT SETUP BONUS
+        if e5>e10>e20 and 52 <= rsi <= 58 and 0.9 <= vol_ratio <= 2.0 and abs(pump_3d) <= 3:
+            score+=15; reasons.append(f"PERFECT ULTRA BAWAH SETUP +15%")
         if score > 100: score = 100
         if score < 0: score = 0
         pred="NAIK" if score>=65 else "TURUN" if score<=40 else "SIDEWAYS"
