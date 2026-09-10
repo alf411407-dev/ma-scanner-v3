@@ -73,11 +73,11 @@ start_time=time.time()
 @app.route('/')
 def home():
     uptime=int(time.time()-start_time)
-    return f"Bot V18 ANTI-HILANG CACHE - Uptime {uptime//3600}h {(uptime%3600)//60}m {datetime.datetime.now(WIB).strftime('%H:%M:%S WIB')}"
+    return f"Bot V19 BAWAH ANTI-PUCUK - Uptime {uptime//3600}h {(uptime%3600)//60}m {datetime.datetime.now(WIB).strftime('%H:%M:%S WIB')}"
 @app.route('/health')
-def health(): return "OK V18 ANTI-HILANG",200
+def health(): return "OK V19 BAWAH",200
 @app.route('/ping')
-def ping(): return "pong V18 ANTI-HILANG",200
+def ping(): return "pong V19 BAWAH",200
 def run_flask(): app.run(host='0.0.0.0',port=8080)
 def keep_alive():
     t=threading.Thread(target=run_flask); t.daemon=True; t.start()
@@ -160,16 +160,16 @@ def predict_next(df):
         score=50; reasons=[]
         if pump_3d > 50:
             score-=35
-            reasons.append(f"⛔ PUCUK! Naik {pump_3d:.0f}% 3 hari -35%")
+            reasons.append(f"PUCUK! Naik {pump_3d:.0f}% 3 hari -35%")
         elif pump_3d > 35:
             score-=20
-            reasons.append(f"⚠️ Udah naik tinggi {pump_3d:.0f}% 3hr -20%")
+            reasons.append(f"Udah naik tinggi {pump_3d:.0f}% 3hr -20%")
         if pump_5d > 70:
             score-=20
-            reasons.append(f"⛔ Pompom {pump_5d:.0f}% 5 hari -20%")
+            reasons.append(f"Pompom {pump_5d:.0f}% 5 hari -20%")
         if wick_up > 15:
             score-=15
-            reasons.append(f"⛔ Wick panjang {wick_up:.0f}% distribution -15%")
+            reasons.append(f"Wick panjang {wick_up:.0f}% distribution -15%")
         if e5>e10>e20: score+=20; reasons.append(f"EMA5>EMA10>EMA20 BULLISH +20%")
         elif e5<e10<e20: score-=20; reasons.append(f"BEARISH -20%")
         dist=abs(e5-e10)/e10*100 if e10!=0 else 0
@@ -229,9 +229,9 @@ def generate_chart_fixed(df,symbol,mode="PASTI"):
         ax_vol.bar(plot_df.index,plot_df['Volume'],color=colors,alpha=0.6)
     plt.tight_layout(); buf=io.BytesIO(); plt.savefig(buf,format='png',dpi=180,bbox_inches='tight'); plt.close(fig); buf.seek(0)
     reason_txt="\n".join([f"- {r}" for r in reasons[:5]])
-    cap=f"{plot_df.index[-1].strftime('%Y-%m-%d')} - {symbol.upper()} [{mode}] {pasti_tag}\nClose {float(last['Close']):.0f} | EMA5 {float(plot_df[f'EMA{ema_fast}'].iloc[-1]):.0f} EMA10 {float(plot_df[f'EMA{ema_mid}'].iloc[-1]):.0f} EMA20 {float(plot_df[f'EMA{ema_slow}'].iloc[-1]):.0f} RSI {float(last['RSI']):.1f} Vol {vol_ratio:.1f}x\nTrend {trend}\n\n{icon} PREDIKSI: {pred} {score}% {pasti_tag}\n{reason_txt}\n\nENTRY {swing_entry} | SL {swing_sl} (-4%)\nTP1 {swing_tp1} (+7%) TP2 {swing_tp2} (+12%) TP3 {swing_tp3} (+20%)\nV18 ANTI-HILANG CACHE - Hanya 80%+ yang keluar!"
+    cap=f"{plot_df.index[-1].strftime('%Y-%m-%d')} - {symbol.upper()} [{mode}] {pasti_tag}\nClose {float(last['Close']):.0f} | EMA5 {float(plot_df[f'EMA{ema_fast}'].iloc[-1]):.0f} EMA10 {float(plot_df[f'EMA{ema_mid}'].iloc[-1]):.0f} EMA20 {float(plot_df[f'EMA{ema_slow}'].iloc[-1]):.0f} RSI {float(last['RSI']):.1f} Vol {vol_ratio:.1f}x\nTrend {trend}\n\n{icon} PREDIKSI: {pred} {score}% {pasti_tag}\n{reason_txt}\n\nENTRY {swing_entry} | SL {swing_sl} (-4%)\nTP1 {swing_tp1} (+7%) TP2 {swing_tp2} (+12%) TP3 {swing_tp3} (+20%)\nV19 BAWAH ANTI-PUCUK"
     return buf,cap
-def analyze_pasti(symbol, min_price=50):
+def analyze_pasti(symbol, min_price=50, mode="PASTI"):
     try:
         df,final_sym=get_data_fixed(symbol)
         if df is None: return None
@@ -240,20 +240,54 @@ def analyze_pasti(symbol, min_price=50):
         if "NAIK" not in pred: return None
         df_flat=flatten_df(df.copy())
         close=pd.Series(df_flat['Close']).dropna()
+        if mode == "BAWAH":
+            if len(close)>=4:
+                c3 = float(close.iloc[-4])
+                pump3 = (curr_close-c3)/c3*100 if c3>0 else 0
+                if pump3 > 18: return None
+                if pump3 < -5: return None
+            if len(close)>=6:
+                c5 = float(close.iloc[-6])
+                pump5 = (curr_close-c5)/c5*100 if c5>0 else 0
+                if pump5 > 25: return None
+            try:
+                high = float(df_flat['High'].iloc[-1])
+                wick = (high-curr_close)/curr_close*100 if curr_close>0 else 0
+                if wick > 10: return None
+            except: pass
+            ema20 = float(calc_ema(close,20).iloc[-1])
+            dist_ema20 = abs(curr_close-ema20)/ema20*100 if ema20>0 else 100
+            if dist_ema20 > 12: return None
+            if not (42 <= rsi <= 63): return None
+            if score < 65: return None
+            if vol_ratio < 0.8: return None
+            return {'symbol':symbol.replace('.JK',''), 'close':curr_close, 'score':score, 'vol':vol_ratio, 'rsi':rsi, 'reasons':reasons, 'pump3': pump3 if 'pump3' in locals() else 0, 'dist20': dist_ema20}
         if len(close)>=4:
             c3 = float(close.iloc[-4])
             pump3 = (curr_close-c3)/c3*100 if c3>0 else 0
-            if pump3 > 30: return None
+            if mode=="PAGI":
+                if pump3 > 50: return None
+            else:
+                if pump3 > 30: return None
         try:
             high = float(df_flat['High'].iloc[-1])
             wick = (high-curr_close)/curr_close*100 if curr_close>0 else 0
-            if wick > 12: return None
+            if mode=="PAGI":
+                if wick > 20: return None
+            else:
+                if wick > 12: return None
         except: pass
         if score < 80: return None
-        if vol_ratio < 1.5: return None
+        if mode=="PAGI":
+            if vol_ratio < 0.8: return None
+        else:
+            if vol_ratio < 1.5: return None
         if not (50 <= rsi <= 68): return None
         return {'symbol':symbol.replace('.JK',''), 'close':curr_close, 'score':score, 'vol':vol_ratio, 'rsi':rsi, 'reasons':reasons}
     except: return None
+
+def analyze_bawah(symbol, min_price=50):
+    return analyze_pasti(symbol, min_price, mode="BAWAH")
 def auto_notif_loop():
     global LAST_NOTIF_DATE, LAST_PAGI_DATE
     while True:
@@ -264,16 +298,16 @@ def auto_notif_loop():
             if 915 <= jam <= 930 and LAST_PAGI_DATE != today_str:
                 results=[]
                 for sym in WATCHLIST[:60]:
-                    r=analyze_pasti(sym, min_price=50)
+                    r=analyze_pasti(sym, min_price=50, mode="PAGI")
                     if r: results.append(r)
                 results=sorted(results,key=lambda x:x['score'],reverse=True)
                 if results:
-                    txt=f"🚀 V18 ANTI-HILANG PAGI 09:15 {today_str}\n{len(results)} SAHAM PASTI 80%+ VOL RAME!\n\n"
+                    txt=f"🚀 V19 PAGI 09:15 {today_str}\n{len(results)} SAHAM PASTI 80%+!\n\n"
                     for i,r in enumerate(results[:5],1):
-                        txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% Vol {r['vol']:.1f}x\n   KLO ADA MASUK AJA! /pagi {r['symbol'].lower()}.jk\n\n"
-                    txt+="🚀 GAS MASUK! KLO ADA MASUK AJA!"
+                        txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% Vol {r['vol']:.1f}x\n   /pagi {r['symbol'].lower()}.jk\n\n"
+                    txt+="GAS MASUK!"
                 else:
-                    txt=f"☕ PAGI {today_str} 09:15 - V18 ANTI-HILANG\nGak ada yang PASTI 80%+ pagi ini. Market belum kuat + volume rame.\nJaga modal! Cek /scan"
+                    txt=f"☕ PAGI {today_str} 09:15 - V19\nGak ada yang PASTI 80%+ pagi ini.\nCek /scan bawah buat yang masih dibawah!"
                 for cid in list(CHAT_IDS):
                     try: bot.send_message(cid, txt)
                     except: pass
@@ -282,16 +316,16 @@ def auto_notif_loop():
             if 1530 <= jam <= 1545 and LAST_NOTIF_DATE != today_str:
                 results=[]
                 for sym in WATCHLIST[:60]:
-                    r=analyze_pasti(sym, min_price=50)
+                    r=analyze_pasti(sym, min_price=50, mode="SORE")
                     if r: results.append(r)
                 results=sorted(results,key=lambda x:x['score'],reverse=True)
                 if results:
-                    txt=f"🔥 V18 ANTI-HILANG SORE 15:30 {today_str}\n{len(results)} SAHAM PASTI 80%+!\n\n"
+                    txt=f"🔥 V19 SORE 15:30 {today_str}\n{len(results)} SAHAM PASTI 80%+!\n\n"
                     for i,r in enumerate(results[:5],1):
                         txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% RSI {r['rsi']:.0f}\n   /sore {r['symbol'].lower()}.jk\n\n"
-                    txt+="🚀 GAS SORE! KLO ADA MASUK AJA!"
+                    txt+="GAS SORE!"
                 else:
-                    txt=f"🌇 SORE {today_str} 15:30 - V18 ANTI-HILANG\nGak ada yang PASTI 80%+ sore ini.\nBesok pagi cek lagi! /scan"
+                    txt=f"SORE {today_str} 15:30 - V19\nGak ada yang PASTI 80%+ sore ini.\nBesok cek /scan bawah"
                 for cid in list(CHAT_IDS):
                     try: bot.send_message(cid, txt)
                     except: pass
@@ -310,7 +344,7 @@ def process_stock_request(message, mode="PASTI"):
         bot.reply_to(message,f"Gunakan: /{mode.lower()} BRMS.JK")
         return
     sym=args[0].upper().replace(".JK.JK",".JK")
-    loading=bot.reply_to(message,f"⏳ {mode} {sym} cek PASTI...")
+    loading=bot.reply_to(message,f"⏳ {mode} {sym} cek...")
     df,final_sym=get_data_fixed(sym)
     if df is None:
         bot.edit_message_text(f"No data {sym}",loading.chat.id,loading.message_id); return
@@ -320,56 +354,67 @@ def process_stock_request(message, mode="PASTI"):
         bot.delete_message(loading.chat.id,loading.message_id)
     except Exception as e:
         bot.edit_message_text(f"Error {final_sym}: {e}"[:400],loading.chat.id,loading.message_id)
-@bot.message_handler(commands=['ma','pagi','sore','swing','pasti'])
+@bot.message_handler(commands=['ma','pagi','sore','swing','pasti','bawah'])
 def handle_modes(message):
     cmd=message.text.split()[0].replace('/','').upper()
     process_stock_request(message, cmd)
 @bot.message_handler(commands=['start','help'])
 def handle_help(message):
     save_chat_id(message.chat.id)
-    bot.reply_to(message,"V18 ANTI-HILANG MODE 🔥\nHanya yang 80%+ & Vol rame!\n\n/pasti BRMS.JK - cek apakah PASTI 80%+\n/pagi BRMS.JK - mode pagi\n/sore BRMS.JK - mode sore\n/scan pasti - hanya 80%+ pasti\n/scan - semua 70%+\n\nAuto 09:15 & 15:30 hanya ngasih yang PASTI!")
+    bot.reply_to(message,"V19 BAWAH ANTI-PUCUK 🔥\n/pasti BRMS.JK - cek PASTI 80%+\n/bawah BRMS.JK - cek masih bawah? (early)\n/scan pasti - 80%+ pasti\n/scan bawah - YANG MASIH BAWAH 65%+ (ANTI-PUCUK)\n/scan - semua 70%+\nAuto 09:15 & 15:30")
 @bot.message_handler(commands=['scan'])
 def handle_scan(message):
     save_chat_id(message.chat.id)
     txt_full=message.text.lower()
-    pasti_mode = "pasti" in txt_full
+    bawah_mode = "bawah" in txt_full
+    pasti_mode = "pasti" in txt_full and not bawah_mode
     min_price=50
     for a in message.text.split()[1:]:
         if a.isdigit():
             try: min_price=int(a); break
             except: pass
-    if pasti_mode:
-        loading=bot.reply_to(message,f"🔍 V18 ANTI-HILANG Scanning 60 saham >{min_price} hanya 80%+ Vol>1.5x...")
+    if bawah_mode:
+        loading=bot.reply_to(message,f"🔍 V19 BAWAH Scanning >{min_price} MASIH DI BAWAH 65%+...")
         try:
             results=[]
             for sym in WATCHLIST[:60]:
-                r=analyze_pasti(sym, min_price=min_price)
+                r=analyze_bawah(sym, min_price=min_price)
+                if r: results.append(r)
+            results=sorted(results,key=lambda x: (x['score'], -x['pump3']),reverse=True)
+            if results:
+                txt=f"🟢 V19 BAWAH - MASIH DI BAWAH {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nPump3<18% RSI42-63 DistEMA20<12% Total {len(results)}\n\n"
+                for i,r in enumerate(results[:15],1):
+                    txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% Pump {r['pump3']:.0f}% RSI {r['rsi']:.0f} Vol {r['vol']:.1f}x Dist20 {r['dist20']:.0f}%\n   {r['reasons'][0] if r['reasons'] else ''}\n   /bawah {r['symbol'].lower()}.jk\n\n"
+                txt+="Ini yang masih di bawah, bukan pucuk!"
+            else:
+                txt=f"🔍 V19 BAWAH >{min_price} - Gak ada yang masih di bawah 65%+ hari ini."
+            bot.reply_to(message,txt)
+            try: bot.delete_message(loading.chat.id,loading.message_id)
+            except: pass
+        except Exception as e:
+            bot.edit_message_text(f"Error: {e}"[:400],loading.chat.id,loading.message_id)
+    elif pasti_mode:
+        loading=bot.reply_to(message,f"🔍 V19 Scanning >{min_price} 80%+...")
+        try:
+            results=[]
+            for sym in WATCHLIST[:60]:
+                r=analyze_pasti(sym, min_price=min_price, mode="SORE")
                 if r: results.append(r)
             results=sorted(results,key=lambda x:x['score'],reverse=True)
-            is_market_closed = datetime.datetime.now(WIB).hour >= 16
             if results:
-                save_sore_cache(results)
-                txt=f"🔥 V18 ANTI-HILANG 80%+ - {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nFilter >{min_price} | Vol>1.5x | RSI 50-68 | Total {len(results)}\n\n✅ YANG PASTI AJA ({len(results)}):\n"
+                txt=f"🔥 V19 80%+ - {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nTotal {len(results)}\n\n"
                 for i,r in enumerate(results[:10],1):
-                    txt+=f"{i}. {r['symbol']} - {r['close']:.0f} | {r['score']}% | RSI {r['rsi']:.0f} Vol {r['vol']:.1f}x\n   {r['reasons'][0] if r['reasons'] else ''}\n   /pasti {r['symbol'].lower()}.jk\n\n"
-                txt+="\nIni yang paling aman buat PAGI-SORE & SWING!"
+                    txt+=f"{i}. {r['symbol']} - {r['close']:.0f} | {r['score']}% RSI {r['rsi']:.0f} Vol {r['vol']:.1f}x\n   {r['reasons'][0] if r['reasons'] else ''}\n   /pasti {r['symbol'].lower()}.jk\n\n"
+                txt+="Ini yang paling aman!"
             else:
-                # coba load cache sore klo market tutup (bug ENRG sore muncul malem ilang)
-                if is_market_closed and LAST_SORE_CACHE:
-                    results = LAST_SORE_CACHE
-                    txt=f"🌙 V17 SORE CACHE - {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nMarket tutup, Vol ilang, ini hasil SORE tadi 15:30 (ANTI-HILANG):\n\n✅ SORE TADI ({len(results)}):\n"
-                    for i,r in enumerate(results[:10],1):
-                        txt+=f"{i}. {r['symbol']} - {r['close']:.0f} | {r['score']}% | RSI {r['rsi']:.0f} Vol {r['vol']:.1f}x\n   {r['reasons'][0] if r['reasons'] else ''}\n   /pasti {r['symbol'].lower()}.jk\n\n"
-                    txt+="\n⚠️ Vol malem ilang karena yfinance, tapi sore tadi PASTI!\nBesok cek lagi 09:15!"
-                else:
-                    txt=f"🔍 V18 ANTI-HILANG >{min_price} - {datetime.datetime.now(WIB).strftime('%d %b %H:%M')}\nGak ada yang PASTI 80%+ hari ini.\n\nArtinya market belum ada yang bener-bener kuat + volume rame.\nMending jaga modal, cek /scan buat yang 70%+."
+                txt=f"🔍 V19 >{min_price} Gak ada yang PASTI 80%+ hari ini. Cek /scan bawah"
             bot.reply_to(message,txt)
             try: bot.delete_message(loading.chat.id,loading.message_id)
             except: pass
         except Exception as e:
             bot.edit_message_text(f"Error: {e}"[:400],loading.chat.id,loading.message_id)
     else:
-        loading=bot.reply_to(message,f"🔍 V18 ANTI-HILANG Scanning 60 saham >{min_price} 70%+...")
+        loading=bot.reply_to(message,f"🔍 V19 Scanning >{min_price} 70%+...")
         try:
             results=[]
             for sym in WATCHLIST[:60]:
@@ -394,13 +439,13 @@ def handle_scan(message):
                     results.append({'symbol':sym.replace('.JK',''), 'close':close, 'score':score, 'vol':vol, 'rsi':rsi, 'reasons':reasons})
             results=sorted(results,key=lambda x:x['score'],reverse=True)
             if not results:
-                txt=f"🔍 V18 ANTI-HILANG >{min_price} {datetime.datetime.now(WIB).strftime('%d %b %H:%M')}\nGak ada 70%+ ANTI-HILANG hari ini.\nMarket banyak pucuk/distribution."
+                txt=f"🔍 V19 >{min_price} Gak ada 70%+ hari ini. Coba /scan bawah"
             else:
-                txt=f"🔥 V18 ANTI-HILANG SCAN 70%+ - {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nTotal {len(results)} (udah filter pucuk)\n\n"
+                txt=f"🔥 V19 SCAN 70%+ - {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nTotal {len(results)}\n\n"
                 for i,r in enumerate(results[:15],1):
-                    tag="🔥 PASTI" if r['score']>=80 else "⚡"
+                    tag="PASTI" if r['score']>=80 else ""
                     txt+=f"{i}. {tag} {r['symbol']} {r['close']:.0f} {r['score']}% Vol {r['vol']:.1f}x\n   {r['reasons'][0] if r['reasons'] else ''}\n   /pagi {r['symbol'].lower()}.jk\n\n"
-                txt+="Ketik /scan pasti buat yang 80%+ aja!"
+                txt+="Cek /scan bawah buat yang masih dibawah!"
             bot.reply_to(message,txt)
             bot.delete_message(loading.chat.id,loading.message_id)
         except Exception as e:
@@ -408,7 +453,7 @@ def handle_scan(message):
 if __name__=="__main__":
     start_anti_tidur()
     start_auto()
-    print("Bot V18 ANTI-HILANG CACHE PASTI running...")
+    print("Bot V19 BAWAH ANTI-PUCUK running...")
     try:
         bot.remove_webhook()
         time.sleep(2)
