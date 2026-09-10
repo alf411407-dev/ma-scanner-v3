@@ -1,3 +1,4 @@
+
 import os, io, time, datetime, threading
 import pandas as pd
 import yfinance as yf
@@ -55,6 +56,7 @@ def save_chat_id(cid):
         except: pass
         open(CHAT_FILE,"w").write(data)
     except: pass
+
 def load_chat_ids():
     try:
         for p in [CHAT_FILE_PERSIST, CHAT_FILE, "/tmp/chat_ids.txt"]:
@@ -65,7 +67,33 @@ def load_chat_ids():
                         except: pass
                 if CHAT_IDS: break
     except: pass
+
 load_chat_ids()
+
+def save_last_dates():
+    try:
+        import json, pathlib
+        data = {"pagi": LAST_PAGI_DATE, "siang": LAST_SIANG_DATE, "sore": LAST_NOTIF_DATE}
+        pathlib.Path("/data").mkdir(exist_ok=True)
+        open("/data/last_notif.json","w").write(json.dumps(data))
+        open("last_notif.json","w").write(json.dumps(data))
+    except: pass
+
+def load_last_dates():
+    global LAST_PAGI_DATE, LAST_SIANG_DATE, LAST_NOTIF_DATE
+    try:
+        import json, os
+        for p in ["/data/last_notif.json", "last_notif.json"]:
+            if os.path.exists(p):
+                d=json.loads(open(p).read())
+                LAST_PAGI_DATE=d.get("pagi","")
+                LAST_SIANG_DATE=d.get("siang","")
+                LAST_NOTIF_DATE=d.get("sore","")
+                break
+    except: pass
+
+load_last_dates()
+
 WATCHLIST_BLUE = ["BBCA.JK","BBRI.JK","BMRI.JK","TLKM.JK","ASII.JK","BBNI.JK","UNVR.JK","ICBP.JK","INDF.JK","KLBF.JK","GOTO.JK","ACES.JK","ADRO.JK","ANTM.JK","ARTO.JK","BBTN.JK","BRIS.JK","CPIN.JK","EMTK.JK","EXCL.JK","HRUM.JK","INCO.JK","INDY.JK","INKP.JK","ITMG.JK","JPFA.JK","MDKA.JK","MEDC.JK","PGAS.JK","PTBA.JK","SMGR.JK","TINS.JK","TOWR.JK","UNTR.JK","PWON.JK","BSDE.JK","CTRA.JK","SMRA.JK","LPKR.JK","ELSA.JK","BRPT.JK","ESSA.JK","AKRA.JK","AMRT.JK","BBYB.JK","MEDS.JK","BREN.JK","CUAN.JK","AMMN.JK","MBMA.JK","NCKL.JK","PTRO.JK","RAJA.JK","PGEO.JK","BRMS.JK","DEWA.JK"]
 WATCHLIST_GORENGAN = ["BRMS.JK","DEWA.JK","BUVA.JK","COCO.JK","HATM.JK","BUMI.JK","ENRG.JK","BULL.JK","BRPT.JK","ESSA.JK","BEEF.JK","CARE.JK","ZBRA.JK","BIPI.JK","BIMA.JK","BBSS.JK","BGTG.JK","BWPT.JK","CBMF.JK","CMPP.JK","CRAB.JK","DOID.JK","FIRE.JK","GOTO.JK","HUMI.JK","IOTF.JK","KIOS.JK","KPIG.JK","LMAX.JK","MMLP.JK","MTEL.JK","NASI.JK","NICE.JK","PGEO.JK","PTRO.JK","SGER.JK","SMLE.JK","SRTG.JK","TPIA.JK","WIFI.JK","WOOL.JK","BEST.JK","MINA.JK"]
 WATCHLIST = list(dict.fromkeys(WATCHLIST_BLUE + WATCHLIST_GORENGAN))
@@ -145,48 +173,21 @@ def predict_next(df):
         vol_ratio=vol_now/vol_ma if vol_ma>0 else 1
         curr_close=float(close.iloc[-1])
         prev_close=float(close.iloc[-2])
-        naik_2hari = curr_close > prev_close and prev_close > float(close.iloc[-3])
-        close_3d_ago = float(close.iloc[-4]) if len(close)>=4 else curr_close
-        close_5d_ago = float(close.iloc[-6]) if len(close)>=6 else curr_close
-        pump_3d = (curr_close - close_3d_ago)/close_3d_ago*100 if close_3d_ago>0 else 0
-        pump_5d = (curr_close - close_5d_ago)/close_5d_ago*100 if close_5d_ago>0 else 0
-        try:
-            last_high = float(df['High'].iloc[-1])
-            last_low = float(df['Low'].iloc[-1])
-            wick_up = (last_high - curr_close)/curr_close*100 if curr_close>0 else 0
-        except:
-            last_high = curr_close
-            last_low = curr_close
-            wick_up = 0
+        pump_3d=0
+        try: c3=float(close.iloc[-4]); pump_3d=(curr_close-c3)/c3*100 if c3>0 else 0
+        except: pass
+        wick_up=0
+        try: hi=float(df['High'].iloc[-1]); wick_up=(hi-curr_close)/curr_close*100 if curr_close>0 else 0
+        except: pass
         score=50; reasons=[]
-        if pump_3d > 50:
-            score-=35
-            reasons.append(f"PUCUK! Naik {pump_3d:.0f}% 3 hari -35%")
-        elif pump_3d > 35:
-            score-=20
-            reasons.append(f"Udah naik tinggi {pump_3d:.0f}% 3hr -20%")
-        if pump_5d > 70:
-            score-=20
-            reasons.append(f"Pompom {pump_5d:.0f}% 5 hari -20%")
-        if wick_up > 15:
-            score-=15
-            reasons.append(f"Wick panjang {wick_up:.0f}% distribution -15%")
         if e5>e10>e20: score+=20; reasons.append(f"EMA5>EMA10>EMA20 BULLISH +20%")
-        elif e5<e10<e20: score-=20; reasons.append(f"BEARISH -20%")
-        dist=abs(e5-e10)/e10*100 if e10!=0 else 0
-        if e5>e10 and dist>1.0: score+=10; reasons.append(f"EMA5 jauh di atas {dist:.1f}% +10%")
-        if e5p<=e10p and e5>e10: score+=15; reasons.append(f"Baru cross UP +15%")
-        if e5_2<e10 and e5p<e10 and e5>e10: score+=5; reasons.append(f"Cross valid (bukan fake) +5%")
-        if rsi>70: score-=15; reasons.append(f"RSI overbought {rsi:.0f} -15%")
-        elif rsi<30: score+=10; reasons.append(f"RSI oversold {rsi:.0f} +10%")
-        elif 55<=rsi<=65: score+=10; reasons.append(f"RSI ideal {rsi:.0f} +10%")
-        elif 50<=rsi<=70: score+=5; reasons.append(f"RSI ok {rsi:.0f} +5%")
-        if vol_ratio>2.0: score+=15; reasons.append(f"Volume SUPER rame {vol_ratio:.1f}x +15%")
-        elif vol_ratio>1.5: score+=10; reasons.append(f"Volume rame {vol_ratio:.1f}x +10%")
+        elif e5>e10: score+=10; reasons.append(f"EMA5>EMA10 +10%")
+        if e5>e5p and e10>e10p: score+=10; reasons.append(f"EMA5 & EMA10 naik +10%")
+        if 50 <= rsi <= 70: score+=15; reasons.append(f"RSI {rsi:.0f} ideal 50-70 +15%")
+        elif 45 <= rsi <= 75: score+=8; reasons.append(f"RSI {rsi:.0f} ok +8%")
+        if vol_ratio>=1.5: score+=15; reasons.append(f"Vol {vol_ratio:.1f}x tinggi +15%")
+        elif vol_ratio>=1.0: score+=8; reasons.append(f"Vol {vol_ratio:.1f}x ok +8%")
         elif vol_ratio<0.5: score-=10; reasons.append(f"Volume sepi {vol_ratio:.1f}x -10%")
-        if naik_2hari: score+=5; reasons.append(f"Naik 2 hari berturut +5%")
-        if curr_close > e5: score+=5; reasons.append(f"Close di atas EMA5 +5%")
-        # BONUS 100% KHUSUS ULTRA BAWAH - V22
         if pump_3d >= -3 and pump_3d <= 2: 
             score+=12; reasons.append(f"SUPER BAWAH Pump {pump_3d:.1f}% +12%")
         if wick_up < 3:
@@ -208,26 +209,11 @@ def generate_chart_fixed(df,symbol,mode="PASTI"):
     plot_df=df.tail(100).copy()
     pred,score,reasons,vol_ratio,rsi_val,_=predict_next(df)
     curr_close=float(close.iloc[-1])
-    swing_entry=bulet_idx(curr_close)
-    swing_sl=bulet_idx(curr_close*0.96)
-    swing_tp1=bulet_idx(curr_close*1.07)
-    swing_tp2=bulet_idx(curr_close*1.12)
-    swing_tp3=bulet_idx(curr_close*1.20)
-    df['BuySignal']=(df['EMA5']>df['EMA10'])&(df['EMA5'].shift(1)<=df['EMA10'].shift(1))
-    df['SellSignal']=(df['EMA5']<df['EMA10'])&(df['EMA5'].shift(1)>=df['EMA10'].shift(1))
-    plot_df['BuySignal']=df['BuySignal'].tail(100)
-    plot_df['SellSignal']=df['SellSignal'].tail(100)
-    plot_df['BuySell']=plot_df.apply(lambda x: 'BUY' if x['BuySignal'] else 'SELL' if x['SellSignal'] else '', axis=1)
-    fig,(ax_price,ax_vol)=plt.subplots(2,1,figsize=(10,6),gridspec_kw={'height_ratios':[3,1]},sharex=True)
+    fig, (ax_price, ax_vol) = plt.subplots(2,1,figsize=(10,6),gridspec_kw={'height_ratios':[3,1]},sharex=True)
     ax_price.plot(plot_df.index,plot_df['Close'],label='Close',color='black',linewidth=1)
-    ax_price.plot(plot_df.index,plot_df['EMA5'],label=f'EMA{ema_fast}',color='blue',linewidth=1)
-    ax_price.plot(plot_df.index,plot_df[f'EMA{ema_mid}'],label=f'EMA{ema_mid}',color='orange',linewidth=1)
-    ax_price.plot(plot_df.index,plot_df[f'EMA{ema_slow}'],label=f'EMA{ema_slow}',color='purple',linewidth=1)
-    for idx,row in plot_df.iterrows():
-        try:
-            if row['BuySell']=='BUY': ax_price.annotate('BUY',xy=(idx,float(row['Low'])*0.985),xytext=(idx,float(row['Low'])*0.97),bbox=dict(boxstyle="round,pad=0.4",fc="#089981",ec="#089981",alpha=0.9),color='white',fontsize=9,weight='bold',ha='center')
-            elif row['BuySell']=='SELL': ax_price.annotate('SELL',xy=(idx,float(row['High'])*1.015),xytext=(idx,float(row['High'])*1.03),bbox=dict(boxstyle="round,pad=0.4",fc="#F23645",ec="#F23645",alpha=0.9),color='white',fontsize=9,weight='bold',ha='center')
-        except: pass
+    ax_price.plot(plot_df.index,plot_df['EMA5'],label='EMA5',color='blue',linewidth=1)
+    ax_price.plot(plot_df.index,plot_df['EMA10'],label='EMA10',color='orange',linewidth=1)
+    ax_price.plot(plot_df.index,plot_df['EMA20'],label='EMA20',color='red',linewidth=1)
     last=plot_df.iloc[-1]
     trend="BULLISH" if float(plot_df[f'EMA{ema_fast}'].iloc[-1])>float(plot_df[f'EMA{ema_mid}'].iloc[-1])>float(plot_df[f'EMA{ema_slow}'].iloc[-1]) else "BEARISH"
     icon = "🚀" if "NAIK" in pred else "🔻" if "TURUN" in pred else "➡️"
@@ -239,7 +225,8 @@ def generate_chart_fixed(df,symbol,mode="PASTI"):
         ax_vol.bar(plot_df.index,plot_df['Volume'],color=colors,alpha=0.6)
     plt.tight_layout(); buf=io.BytesIO(); plt.savefig(buf,format='png',dpi=180,bbox_inches='tight'); plt.close(fig); buf.seek(0)
     reason_txt="\n".join([f"- {r}" for r in reasons[:5]])
-    cap=f"{plot_df.index[-1].strftime('%Y-%m-%d')} - {symbol.upper()} [{mode}] {pasti_tag}\nClose {float(last['Close']):.0f} | EMA5 {float(plot_df[f'EMA{ema_fast}'].iloc[-1]):.0f} EMA10 {float(plot_df[f'EMA{ema_mid}'].iloc[-1]):.0f} EMA20 {float(plot_df[f'EMA{ema_slow}'].iloc[-1]):.0f} RSI {float(last['RSI']):.1f} Vol {vol_ratio:.1f}x\nTrend {trend}\n\n{icon} PREDIKSI: {pred} {score}% {pasti_tag}\n{reason_txt}\n\nENTRY {swing_entry} | SL {swing_sl} (-4%)\nTP1 {swing_tp1} (+7%) TP2 {swing_tp2} (+12%) TP3 {swing_tp3} (+20%)\nV20 ULTRA BAWAH"
+    swing_entry=float(last['Close']); swing_sl=bulet_idx(swing_entry*0.96); swing_tp1=bulet_idx(swing_entry*1.07); swing_tp2=bulet_idx(swing_entry*1.12); swing_tp3=bulet_idx(swing_entry*1.20)
+    cap=f"{plot_df.index[-1].strftime('%Y-%m-%d')} - {symbol.upper()} [{mode}] {pasti_tag}\nClose {float(last['Close']):.0f} | EMA5 {float(plot_df[f'EMA{ema_fast}'].iloc[-1]):.0f} EMA10 {float(plot_df[f'EMA{ema_mid}'].iloc[-1]):.0f} EMA20 {float(plot_df[f'EMA{ema_slow}'].iloc[-1]):.0f} RSI {float(last['RSI']):.1f} Vol {vol_ratio:.1f}x\nTrend {trend}\n\n{icon} PREDIKSI: {pred} {score}% {pasti_tag}\n{reason_txt}\n\nENTRY {swing_entry} | SL {swing_sl} (-4%)\nTP1 {swing_tp1} (+7%) TP2 {swing_tp2} (+12%) TP3 {swing_tp3} (+20%)\nV24 3X SEHARI"
     return buf,cap
 def analyze_pasti(symbol, min_price=50, mode="PASTI"):
     try:
@@ -248,56 +235,9 @@ def analyze_pasti(symbol, min_price=50, mode="PASTI"):
         pred,score,reasons,vol_ratio,rsi,curr_close=predict_next(df)
         if curr_close < min_price: return None
         if "NAIK" not in pred: return None
-        df_flat=flatten_df(df.copy())
-        close=pd.Series(df_flat['Close']).dropna()
-        if mode == "BAWAH":
-            if len(close)>=4:
-                c3 = float(close.iloc[-4])
-                pump3 = (curr_close-c3)/c3*100 if c3>0 else 0
-                if pump3 > 18: return None
-                if pump3 < -5: return None
-            if len(close)>=6:
-                c5 = float(close.iloc[-6])
-                pump5 = (curr_close-c5)/c5*100 if c5>0 else 0
-                if pump5 > 25: return None
-            try:
-                high = float(df_flat['High'].iloc[-1])
-                wick = (high-curr_close)/curr_close*100 if curr_close>0 else 0
-                if wick > 10: return None
-            except: pass
-            ema20 = float(calc_ema(close,20).iloc[-1])
-            dist_ema20 = abs(curr_close-ema20)/ema20*100 if ema20>0 else 100
-            if dist_ema20 > 12: return None
-            if not (42 <= rsi <= 63): return None
-            if score < 65: return None
-            if vol_ratio < 0.8: return None
-            return {'symbol':symbol.replace('.JK',''), 'close':curr_close, 'score':score, 'vol':vol_ratio, 'rsi':rsi, 'reasons':reasons, 'pump3': pump3 if 'pump3' in locals() else 0, 'dist20': dist_ema20}
-        if len(close)>=4:
-            c3 = float(close.iloc[-4])
-            pump3 = (curr_close-c3)/c3*100 if c3>0 else 0
-            if mode=="PAGI":
-                if pump3 > 50: return None
-            else:
-                if pump3 > 30: return None
-        try:
-            high = float(df_flat['High'].iloc[-1])
-            wick = (high-curr_close)/curr_close*100 if curr_close>0 else 0
-            if mode=="PAGI":
-                if wick > 20: return None
-            else:
-                if wick > 12: return None
-        except: pass
-        if score < 80: return None
-        if mode=="PAGI":
-            if vol_ratio < 0.8: return None
-        else:
-            if vol_ratio < 1.5: return None
-        if not (50 <= rsi <= 68): return None
         return {'symbol':symbol.replace('.JK',''), 'close':curr_close, 'score':score, 'vol':vol_ratio, 'rsi':rsi, 'reasons':reasons}
     except: return None
-
 def analyze_bawah(symbol, min_price=50):
-    # V22 TOP3 WAJIB 100% - ULTRA BAWAH
     try:
         df,final_sym=get_data_fixed(symbol)
         if df is None: return None
@@ -354,30 +294,6 @@ def analyze_bawah(symbol, min_price=50):
         return {'symbol':symbol.replace('.JK',''), 'close':curr_close, 'score':int(final_score), 'vol':vol_ratio, 'rsi':rsi, 'reasons':reasons, 'pump3': pump3, 'dist20': dist_ema20, 'ema_dist': ema_dist}
     except Exception as e:
         return None
-def save_last_dates():
-    try:
-        import json, pathlib
-        data = {"pagi": LAST_PAGI_DATE, "siang": LAST_SIANG_DATE, "sore": LAST_NOTIF_DATE}
-        pathlib.Path("/data").mkdir(exist_ok=True)
-        open("/data/last_notif.json","w").write(json.dumps(data))
-        open("last_notif.json","w").write(json.dumps(data))
-    except: pass
-
-def load_last_dates():
-    global LAST_PAGI_DATE, LAST_SIANG_DATE, LAST_NOTIF_DATE
-    try:
-        import json, os
-        for p in ["/data/last_notif.json", "last_notif.json"]:
-            if os.path.exists(p):
-                d=json.loads(open(p).read())
-                LAST_PAGI_DATE=d.get("pagi","")
-                LAST_SIANG_DATE=d.get("siang","")
-                LAST_NOTIF_DATE=d.get("sore","")
-                break
-    except: pass
-
-# Load persisted dates at startup
-load_last_dates()
 
 def auto_notif_loop():
     global LAST_NOTIF_DATE, LAST_PAGI_DATE, LAST_SIANG_DATE
@@ -386,7 +302,6 @@ def auto_notif_loop():
             now=datetime.datetime.now(WIB)
             today_str=now.strftime('%Y-%m-%d')
             jam=now.hour*100+now.minute
-            # DEBUG LOG
             if jam % 5 == 0:
                 print(f"Auto loop {now} CHAT_IDS={len(CHAT_IDS)} LAST_PAGI={LAST_PAGI_DATE} LAST_SIANG={LAST_SIANG_DATE} LAST_SORE={LAST_NOTIF_DATE}")
             if 915 <= jam <= 935 and LAST_PAGI_DATE != today_str:
@@ -395,6 +310,8 @@ def auto_notif_loop():
                     r=analyze_pasti(sym, min_price=50, mode="PAGI")
                     if r: results_pasti.append(r)
                 results_pasti=sorted(results_pasti,key=lambda x:x['score'],reverse=True)
+                for idx in range(min(3, len(results_pasti))):
+                    results_pasti[idx]['score']=100
                 results_bawah=[]
                 for sym in WATCHLIST[:60]:
                     r=analyze_bawah(sym, min_price=50)
@@ -405,7 +322,7 @@ def auto_notif_loop():
                 for idx in range(3, min(6, len(results_bawah))):
                     if results_bawah[idx]['score'] < 95:
                         results_bawah[idx]['score']=95
-                txt=f"🚀 V22 PAGI 09:15 {today_str}\n"
+                txt=f"🚀 V24 PAGI 09:15 {today_str}\n"
                 if results_pasti:
                     txt+=f"{len(results_pasti)} SAHAM PASTI 80%+!\n\n"
                     for i,r in enumerate(results_pasti[:3],1):
@@ -419,16 +336,13 @@ def auto_notif_loop():
                 else:
                     txt+="Gak ada ULTRA BAWAH pagi ini.\n"
                 txt+="GAS MASUK!"
-                if not CHAT_IDS:
-                    print("WARNING: CHAT_IDS kosong! Tidak bisa kirim notif")
                 for cid in list(CHAT_IDS):
                     try: 
                         bot.send_message(cid, txt)
-                        print(f"Sent PAGI to {cid}")
                     except Exception as e: print(f"Fail send {cid}: {e}")
                 LAST_PAGI_DATE=today_str
                 save_last_dates()
-                time.sleep(3600)  # tidur 1 jam biar ga spam 3x
+                time.sleep(3600)
             if 1200 <= jam <= 1215 and LAST_SIANG_DATE != today_str:
                 results_pasti=[]
                 for sym in WATCHLIST[:60]:
@@ -460,21 +374,19 @@ def auto_notif_loop():
                         txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% Pump {r['pump3']:.0f}% Dist {r['dist20']:.0f}%\n   /bawah {r['symbol'].lower()}.jk\n\n"
                 txt+="GAS SIANG!"
                 for cid in list(CHAT_IDS):
-                    try: 
-                        bot.send_message(cid, txt)
-                        print(f"Sent SIANG to {cid}")
+                    try: bot.send_message(cid, txt)
                     except Exception as e: print(f"Fail send {cid}: {e}")
                 LAST_SIANG_DATE=today_str
                 save_last_dates()
                 time.sleep(3600)
-
             if 1530 <= jam <= 1545 and LAST_NOTIF_DATE != today_str:
-
                 results_pasti=[]
                 for sym in WATCHLIST[:60]:
                     r=analyze_pasti(sym, min_price=50, mode="SORE")
                     if r: results_pasti.append(r)
                 results_pasti=sorted(results_pasti,key=lambda x:x['score'],reverse=True)
+                for idx in range(min(3, len(results_pasti))):
+                    results_pasti[idx]['score']=100
                 results_bawah=[]
                 for sym in WATCHLIST[:60]:
                     r=analyze_bawah(sym, min_price=50)
@@ -485,7 +397,7 @@ def auto_notif_loop():
                 for idx in range(3, min(6, len(results_bawah))):
                     if results_bawah[idx]['score'] < 95:
                         results_bawah[idx]['score']=95
-                txt=f"🔥 V22 SORE 15:30 {today_str}\n"
+                txt=f"🔥 V24 SORE 15:30 {today_str}\n"
                 if results_pasti:
                     txt+=f"{len(results_pasti)} SAHAM PASTI 80%+!\n\n"
                     for i,r in enumerate(results_pasti[:3],1):
@@ -497,31 +409,30 @@ def auto_notif_loop():
                     for i,r in enumerate(results_bawah[:5],1):
                         txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% Pump {r['pump3']:.0f}% Dist {r['dist20']:.0f}%\n   /bawah {r['symbol'].lower()}.jk\n\n"
                 txt+="GAS SORE!"
-                if not CHAT_IDS:
-                    print("WARNING: CHAT_IDS kosong! SORE notif fail")
                 for cid in list(CHAT_IDS):
-                    try: 
-                        bot.send_message(cid, txt)
-                        print(f"Sent SORE to {cid}")
+                    try: bot.send_message(cid, txt)
                     except Exception as e: print(f"Fail send {cid}: {e}")
                 LAST_NOTIF_DATE=today_str
                 save_last_dates()
-                time.sleep(3600)  # tidur 1 jam biar ga spam 3x
+                time.sleep(3600)
             time.sleep(30)
         except Exception as e:
             print(f"auto_notif error: {e}"); time.sleep(60)
-def start_auto():
 
+def start_auto():
     t=threading.Thread(target=auto_notif_loop); t.daemon=True; t.start()
+
 bot=telebot.TeleBot(TOKEN)
+
 def process_stock_request(message, mode="PASTI"):
     save_chat_id(message.chat.id)
-    args=message.text.split()[1:]
-    if not args:
-        bot.reply_to(message,f"Gunakan: /{mode.lower()} BRMS.JK")
+    txt=message.text.strip()
+    parts=txt.split()
+    sym = parts[1] if len(parts)>1 else ""
+    if not sym:
+        bot.reply_to(message, f"Pakai /{mode.lower()} KODE, contoh /{mode.lower()} BBCA.JK")
         return
-    sym=args[0].upper().replace(".JK.JK",".JK")
-    loading=bot.reply_to(message,f"⏳ {mode} {sym} cek...")
+    loading=bot.reply_to(message, f"🔍 {mode} {sym} checking...")
     df,final_sym=get_data_fixed(sym)
     if df is None:
         bot.edit_message_text(f"No data {sym}",loading.chat.id,loading.message_id); return
@@ -531,39 +442,25 @@ def process_stock_request(message, mode="PASTI"):
         bot.delete_message(loading.chat.id,loading.message_id)
     except Exception as e:
         bot.edit_message_text(f"Error {final_sym}: {e}"[:400],loading.chat.id,loading.message_id)
-@bot.message_handler(commands=['ma','pagi','sore','swing','pasti','bawah'])
+
+@bot.message_handler(commands=['ma','pagi','siang','sore','swing','pasti','bawah'])
 def handle_modes(message):
     cmd=message.text.split()[0].replace('/','').upper()
     process_stock_request(message, cmd)
+
 @bot.message_handler(commands=['start','help'])
 def handle_help(message):
     save_chat_id(message.chat.id)
-    bot.reply_to(message,"V24 3X SEHARI 3X FIX 🔥\n/pasti BRMS.JK - cek PASTI 80%+\n/bawah BRMS.JK - cek masih bawah? (early)\n/scan pasti - 80%+ pasti\n/scan bawah - TOP3 100% WAJIB Pump<10%\n/scan - semua 70%+\nAuto 09:15 & 15:30 TOP3 100% | /testnotif /ceknotif")
+    bot.reply_to(message,"V24 3X SEHARI 09:15 12:00 15:30 🔥\n/pasti BRMS.JK - cek PASTI 80%+\n/bawah BRMS.JK - cek masih bawah? (early)\n/scan pasti - 80%+ pasti\n/scan bawah - TOP3 100% WAJIB Pump<10%\n/scan - semua 70%+\nAuto 09:15, 12:00, 15:30 TOP3 100% | /testnotif /ceknotif")
+
 @bot.message_handler(commands=['testnotif','ceknotif','cekid'])
 def handle_testnotif(message):
     save_chat_id(message.chat.id)
     cid = message.chat.id
-    txt = f"✅ TEST NOTIF OK!\nChat ID: {cid}\nTotal saved: {len(CHAT_IDS)}\nCHAT_IDS: {list(CHAT_IDS)[:5]}\n\nKetik /scan bawah buat trigger save ID"
+    txt = f"✅ TEST NOTIF OK!\nChat ID: {cid}\nTotal saved: {len(CHAT_IDS)}\n\nJadwal: 09:15, 12:00, 15:30 WIB"
     bot.reply_to(message, txt)
-    # Kirim test notif langsung
-    try:
-        results_bawah=[]
-        for sym in WATCHLIST[:20]:
-            r=analyze_bawah(sym, min_price=50)
-            if r: results_bawah.append(r)
-        results_bawah=sorted(results_bawah,key=lambda x:(x['score'], -x['pump3']),reverse=True)
-        for idx in range(min(3, len(results_bawah))):
-            results_bawah[idx]['score']=100
-        if results_bawah:
-            txt2=f"🔔 TEST NOTIF V22 - {datetime.datetime.now(WIB).strftime('%H:%M WIB')}\n🟢 {len(results_bawah)} TOP3 100%:\n\n"
-            for i,r in enumerate(results_bawah[:3],1):
-                txt2+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% Pump {r['pump3']:.0f}%\n"
-            bot.send_message(cid, txt2)
-    except Exception as e:
-        bot.reply_to(message, f"Error test: {e}")
 
 @bot.message_handler(commands=['scan'])
-
 def handle_scan(message):
     save_chat_id(message.chat.id)
     txt_full=message.text.lower()
@@ -613,7 +510,7 @@ def handle_scan(message):
                 if results[idx]['score'] < 95:
                     results[idx]['score']=95
             if results:
-                txt=f"🔥 V22 TOP3 100% 80%+ - {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nTotal {len(results)}\n\n"
+                txt=f"🔥 V24 3X SEHARI 80%+ - {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nTotal {len(results)}\n\n"
                 for i,r in enumerate(results[:10],1):
                     txt+=f"{i}. {r['symbol']} - {r['close']:.0f} | {r['score']}% RSI {r['rsi']:.0f} Vol {r['vol']:.1f}x\n   {r['reasons'][0] if r['reasons'] else ''}\n   /pasti {r['symbol'].lower()}.jk\n\n"
                 txt+="Ini yang paling aman!"
@@ -631,36 +528,30 @@ def handle_scan(message):
             for sym in WATCHLIST[:60]:
                 df,_=get_data_fixed(sym)
                 if df is None: continue
-                try:
-                    df_f=flatten_df(df.copy())
-                    cl=pd.Series(df_f['Close']).dropna()
-                    if len(cl)>=4:
-                        c3=float(cl.iloc[-4])
-                        cur=float(cl.iloc[-1])
-                        pump=(cur-c3)/c3*100 if c3>0 else 0
-                        if pump>30: continue
-                    hi=float(df_f['High'].iloc[-1])
-                    cu=float(df_f['Close'].iloc[-1])
-                    wick=(hi-cu)/cu*100 if cu>0 else 0
-                    if wick>12: continue
-                except: pass
                 pred,score,reasons,vol,rsi,close=predict_next(df)
                 if close<min_price: continue
-                if score>=70 and "NAIK" in pred and vol>=1.2 and 50<=rsi<=70:
+                if score>=70 and "NAIK" in pred and vol>=0.8 and 45<=rsi<=70:
                     results.append({'symbol':sym.replace('.JK',''), 'close':close, 'score':score, 'vol':vol, 'rsi':rsi, 'reasons':reasons})
             results=sorted(results,key=lambda x:x['score'],reverse=True)
+            for idx in range(min(3, len(results))):
+                results[idx]['score']=100
+            for idx in range(3, min(6, len(results))):
+                if results[idx]['score'] < 95:
+                    results[idx]['score']=95
             if not results:
                 txt=f"🔍 V24 3X SEHARI >{min_price} Gak ada 70%+ hari ini. Coba /scan bawah"
             else:
-                txt=f"🔥 V22 TOP3 100% SCAN 70%+ - {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nTotal {len(results)}\n\n"
+                txt=f"🔥 V24 3X SEHARI SCAN 70%+ - {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nTotal {len(results)}\n\n"
                 for i,r in enumerate(results[:15],1):
                     tag="PASTI" if r['score']>=80 else ""
                     txt+=f"{i}. {tag} {r['symbol']} {r['close']:.0f} {r['score']}% Vol {r['vol']:.1f}x\n   {r['reasons'][0] if r['reasons'] else ''}\n   /pagi {r['symbol'].lower()}.jk\n\n"
                 txt+="Cek /scan bawah buat yang masih dibawah!"
             bot.reply_to(message,txt)
-            bot.delete_message(loading.chat.id,loading.message_id)
+            try: bot.delete_message(loading.chat.id,loading.message_id)
+            except: pass
         except Exception as e:
             bot.edit_message_text(f"Error: {e}"[:400],loading.chat.id,loading.message_id)
+
 if __name__=="__main__":
     start_anti_tidur()
     start_auto()
