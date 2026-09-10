@@ -193,7 +193,6 @@ def predict_next(df):
         if e5>e10>e20 and 52 <= rsi <= 58 and 0.9 <= vol_ratio <= 2.0 and abs(pump_3d) <= 3:
             score+=18; reasons.append(f"PERFECT ULTRA BAWAH SETUP +18%")
         if score > 100: score = 100
-= 100
         if score < 0: score = 0
         pred="NAIK" if score>=65 else "TURUN" if score<=40 else "SIDEWAYS"
         return pred, score, reasons, vol_ratio, rsi, curr_close
