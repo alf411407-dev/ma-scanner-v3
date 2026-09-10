@@ -60,7 +60,9 @@ def load_last_dates():
 load_last_dates()
 
 WATCHLIST_BLUE = ["BBCA.JK","BBRI.JK","BMRI.JK","TLKM.JK","ASII.JK","BBNI.JK","UNVR.JK","ICBP.JK","INDF.JK","KLBF.JK","GOTO.JK","ACES.JK","ADRO.JK","ANTM.JK","ARTO.JK","BBTN.JK","BRIS.JK","CPIN.JK","EMTK.JK","EXCL.JK","HRUM.JK","INCO.JK","INDY.JK","INKP.JK","ITMG.JK","JPFA.JK","MDKA.JK","MEDC.JK","PGAS.JK","PTBA.JK","SMGR.JK","TINS.JK","TOWR.JK","UNTR.JK","PWON.JK","BSDE.JK","CTRA.JK","SMRA.JK","LPKR.JK","ELSA.JK","BRPT.JK","ESSA.JK","AKRA.JK","AMRT.JK","BBYB.JK","MEDS.JK","BREN.JK","CUAN.JK","AMMN.JK","MBMA.JK","NCKL.JK","PTRO.JK","RAJA.JK","PGEO.JK","BRMS.JK","DEWA.JK"]
-WATCHLIST_GORENGAN = ["BRMS.JK","DEWA.JK","BUVA.JK","COCO.JK","HATM.JK","BUMI.JK","ENRG.JK","BULL.JK","BRPT.JK","ESSA.JK","BEEF.JK","CARE.JK","ZBRA.JK","BIPI.JK","BIMA.JK","BBSS.JK","BGTG.JK","BWPT.JK","CBMF.JK","CMPP.JK","CRAB.JK","DOID.JK","FIRE.JK","GOTO.JK","HUMI.JK","IOTF.JK","KIOS.JK","KPIG.JK","LMAX.JK","MMLP.JK","MTEL.JK","NASI.JK","NICE.JK","PGEO.JK","PTRO.JK","SGER.JK","SMLE.JK","SRTG.JK","TPIA.JK","WIFI.JK","WOOL.JK","BEST.JK","MINA.JK"]
+WATCHLIST_GORENGAN = ["BRMS.JK","DEWA.JK","BUVA.JK","COCO.JK","HATM.JK","BUMI.JK","ENRG.JK","BULL.JK","BRPT.JK","ESSA.JK","BEEF.JK","CARE.JK","ZBRA.JK","BIPI.JK","BIMA.JK","BBSS.JK","BGTG.JK","BWPT.JK","CBMF.JK","CMPP.JK","CRAB.JK","DOID.JK","FIRE.JK","GOTO.JK","HUMI.JK","IOTF.JK","KIOS.JK","KPIG.JK","LMAX.JK","MMLP.JK","MTEL.JK","NASI.JK","NICE.JK","PGEO.JK","PTRO.JK","SGER.JK","SMLE.JK","SRTG.JK","TPIA.JK","WIFI.JK","WOOL.JK","BEST.JK","MINA.JK",
+# TAMBAHAN GORENGAN VIRAL 2024-2026 - SUPER KETAT V28
+"DOOH.JK","WIRG.JK","PYFA.JK","BELI.JK","COIN.JK","CITY.JK","SAGE.JK","IRSX.JK","FILM.JK","MDIA.JK","ZINC.JK","BATR.JK","CASH.JK","DOID.JK","ELSA.JK","ENER.JK","BREN.JK","CUAN.JK","PTMP.JK","MHKI.JK","LABA.JK","CBRE.JK","NANO.JK","TRGU.JK","VKTR.JK","WIRG.JK","GULA.JK","CBUT.JK","CHEM.JK","PTDU.JK"]
 WATCHLIST = list(dict.fromkeys(WATCHLIST_BLUE + WATCHLIST_GORENGAN))
 
 app=Flask(__name__)
@@ -68,11 +70,11 @@ start_time=time.time()
 @app.route('/')
 def home():
     uptime=int(time.time()-start_time)
-    return f"Bot V27 BELI MERAH JUAL IJO 09:51 12:00 15:30 - Uptime {uptime//3600}h"
+    return f"Bot V28 BELI MERAH JUAL IJO 80 SAHAM 09:51 12:00 15:30 - Uptime {uptime//3600}h"
 @app.route('/health')
-def health(): return "OK V27 09:51 12:00 15:30 BELI MERAH JUAL IJO",200
+def health(): return "OK V28 80 SAHAM BELI MERAH JUAL IJO",200
 @app.route('/ping')
-def ping(): return "pong V27",200
+def ping(): return "pong V28",200
 def run_flask(): app.run(host='0.0.0.0',port=8080)
 def keep_alive():
     t=threading.Thread(target=run_flask); t.daemon=True; t.start()
@@ -374,16 +376,16 @@ def handle_scan(message):
             try: min_price=int(a); break
             except: pass
     if bawah_mode:
-        loading=bot.reply_to(message,f"🔴 V27 BELI MERAH Scanning >{min_price} MERAH DISKON...")
+        loading=bot.reply_to(message,f"🔴 V28 BELI MERAH Scanning >{min_price} MERAH DISKON (80 saham)...")
         try:
             results=[]
-            for sym in WATCHLIST[:60]:
+            for sym in WATCHLIST[:80]:
                 r=analyze_bawah(sym, min_price=min_price)
                 if r: results.append(r)
             results=sorted(results,key=lambda x: (x['score'], -x['pump3']),reverse=True)
             for idx in range(min(3, len(results))): results[idx]['score']=100
             if results:
-                txt=f"🔴 V27 BELI MERAH JUAL IJO - BELI PAS MERAH! {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n✅ BELI MERAH DISKON! Dari {len(results)} -> TOP3\n\n"
+                txt=f"🔴 V28 BELI MERAH JUAL IJO - BELI PAS MERAH! {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n✅ BELI MERAH DISKON! Dari {len(results)} -> TOP3\n\n"
                 for i,r in enumerate(results[:3],1):
                     status="🔴 MERAH DISKON GEDE - BELI!" if r['pump3'] <= -2 else "🔴 MERAH DISKON - BELI!"
                     txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% Pump {r['pump3']:.0f}% RSI {r['rsi']:.0f}\n   {status}\n   /merah {r['symbol'].lower()}.jk\n\n"
@@ -394,15 +396,15 @@ def handle_scan(message):
             except: pass
         except Exception as e: bot.edit_message_text(f"Error: {e}"[:400],loading.chat.id,loading.message_id)
     elif ijo_mode:
-        loading=bot.reply_to(message,f"🟢 V27 JUAL IJO Scanning...")
+        loading=bot.reply_to(message,f"🟢 V28 JUAL IJO Scanning (80 saham)...")
         try:
             results=[]
-            for sym in WATCHLIST[:60]:
+            for sym in WATCHLIST[:80]:
                 r=analyze_ijo_jual(sym, min_price=min_price)
                 if r: results.append(r)
             results=sorted(results,key=lambda x: (x['pump3'], x['rsi']),reverse=True)
             if results:
-                txt=f"🟢 V27 JUAL IJO - WAKTUNYA JUAL! {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nDari {len(results)} ijo tinggi\n\n"
+                txt=f"🟢 V28 JUAL IJO - WAKTUNYA JUAL! {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nDari {len(results)} ijo tinggi\n\n"
                 for i,r in enumerate(results[:5],1):
                     txt+=f"{i}. {r['symbol']} {r['close']:.0f} Pump {r['pump3']:.0f}% RSI {r['rsi']:.0f} - JUAL!\n   /ijo {r['symbol'].lower()}.jk\n\n"
                 txt+="JANGAN BELI IJO TINGGI!"
