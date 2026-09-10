@@ -15,6 +15,7 @@ CHAT_FILE="chat_ids.txt"
 CHAT_FILE_PERSIST="/data/chat_ids.txt"
 LAST_NOTIF_DATE=""
 LAST_PAGI_DATE=""
+LAST_SIANG_DATE=""
 SORE_CACHE_FILE="/data/sore_cache.txt"
 SORE_CACHE_FILE_LOCAL="sore_cache.txt"
 LAST_SORE_CACHE=[]
@@ -73,11 +74,11 @@ start_time=time.time()
 @app.route('/')
 def home():
     uptime=int(time.time()-start_time)
-    return f"Bot V23 ANTI-SPAM 3X FIX - Uptime {uptime//3600}h {(uptime%3600)//60}m {datetime.datetime.now(WIB).strftime('%H:%M:%S WIB')}"
+    return f"Bot V24 3X SEHARI 09:15 12:00 15:30 - Uptime {uptime//3600}h {(uptime%3600)//60}m {datetime.datetime.now(WIB).strftime('%H:%M:%S WIB')}"
 @app.route('/health')
-def health(): return "OK V23 ANTI-SPAM",200
+def health(): return "OK V24 3X SEHARI",200
 @app.route('/ping')
-def ping(): return "pong V23 ANTI-SPAM",200
+def ping(): return "pong V24 3X SEHARI",200
 def run_flask(): app.run(host='0.0.0.0',port=8080)
 def keep_alive():
     t=threading.Thread(target=run_flask); t.daemon=True; t.start()
@@ -356,20 +357,21 @@ def analyze_bawah(symbol, min_price=50):
 def save_last_dates():
     try:
         import json, pathlib
-        data = {"pagi": LAST_PAGI_DATE, "sore": LAST_NOTIF_DATE}
+        data = {"pagi": LAST_PAGI_DATE, "siang": LAST_SIANG_DATE, "sore": LAST_NOTIF_DATE}
         pathlib.Path("/data").mkdir(exist_ok=True)
         open("/data/last_notif.json","w").write(json.dumps(data))
         open("last_notif.json","w").write(json.dumps(data))
     except: pass
 
 def load_last_dates():
-    global LAST_PAGI_DATE, LAST_NOTIF_DATE
+    global LAST_PAGI_DATE, LAST_SIANG_DATE, LAST_NOTIF_DATE
     try:
         import json, os
         for p in ["/data/last_notif.json", "last_notif.json"]:
             if os.path.exists(p):
                 d=json.loads(open(p).read())
                 LAST_PAGI_DATE=d.get("pagi","")
+                LAST_SIANG_DATE=d.get("siang","")
                 LAST_NOTIF_DATE=d.get("sore","")
                 break
     except: pass
@@ -378,7 +380,7 @@ def load_last_dates():
 load_last_dates()
 
 def auto_notif_loop():
-    global LAST_NOTIF_DATE, LAST_PAGI_DATE
+    global LAST_NOTIF_DATE, LAST_PAGI_DATE, LAST_SIANG_DATE
     while True:
         try:
             now=datetime.datetime.now(WIB)
@@ -386,7 +388,7 @@ def auto_notif_loop():
             jam=now.hour*100+now.minute
             # DEBUG LOG
             if jam % 5 == 0:
-                print(f"Auto loop {now} CHAT_IDS={len(CHAT_IDS)} LAST_PAGI={LAST_PAGI_DATE} LAST_SORE={LAST_NOTIF_DATE}")
+                print(f"Auto loop {now} CHAT_IDS={len(CHAT_IDS)} LAST_PAGI={LAST_PAGI_DATE} LAST_SIANG={LAST_SIANG_DATE} LAST_SORE={LAST_NOTIF_DATE}")
             if 915 <= jam <= 935 and LAST_PAGI_DATE != today_str:
                 results_pasti=[]
                 for sym in WATCHLIST[:60]:
@@ -427,7 +429,47 @@ def auto_notif_loop():
                 LAST_PAGI_DATE=today_str
                 save_last_dates()
                 time.sleep(3600)  # tidur 1 jam biar ga spam 3x
+            if 1200 <= jam <= 1215 and LAST_SIANG_DATE != today_str:
+                results_pasti=[]
+                for sym in WATCHLIST[:60]:
+                    r=analyze_pasti(sym, min_price=50, mode="SIANG")
+                    if r: results_pasti.append(r)
+                results_pasti=sorted(results_pasti,key=lambda x:x['score'],reverse=True)
+                for idx in range(min(3, len(results_pasti))):
+                    results_pasti[idx]['score']=100
+                results_bawah=[]
+                for sym in WATCHLIST[:60]:
+                    r=analyze_bawah(sym, min_price=50)
+                    if r: results_bawah.append(r)
+                results_bawah=sorted(results_bawah,key=lambda x:(x['score'], -x['pump3']),reverse=True)
+                for idx in range(min(3, len(results_bawah))):
+                    results_bawah[idx]['score']=100
+                for idx in range(3, min(6, len(results_bawah))):
+                    if results_bawah[idx]['score'] < 95:
+                        results_bawah[idx]['score']=95
+                txt=f"☀️ V24 SIANG 12:00 {today_str}\n"
+                if results_pasti:
+                    txt+=f"{len(results_pasti)} SAHAM PASTI 80%+!\n\n"
+                    for i,r in enumerate(results_pasti[:3],1):
+                        txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% RSI {r['rsi']:.0f}\n   /siang {r['symbol'].lower()}.jk\n\n"
+                else:
+                    txt+="Gak ada PASTI 80%+ siang ini.\n\n"
+                if results_bawah:
+                    txt+=f"🟢 {len(results_bawah)} TOP3 100% SIANG BAWAH:\n\n"
+                    for i,r in enumerate(results_bawah[:5],1):
+                        txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% Pump {r['pump3']:.0f}% Dist {r['dist20']:.0f}%\n   /bawah {r['symbol'].lower()}.jk\n\n"
+                txt+="GAS SIANG!"
+                for cid in list(CHAT_IDS):
+                    try: 
+                        bot.send_message(cid, txt)
+                        print(f"Sent SIANG to {cid}")
+                    except Exception as e: print(f"Fail send {cid}: {e}")
+                LAST_SIANG_DATE=today_str
+                save_last_dates()
+                time.sleep(3600)
+
             if 1530 <= jam <= 1545 and LAST_NOTIF_DATE != today_str:
+
                 results_pasti=[]
                 for sym in WATCHLIST[:60]:
                     r=analyze_pasti(sym, min_price=50, mode="SORE")
@@ -496,7 +538,7 @@ def handle_modes(message):
 @bot.message_handler(commands=['start','help'])
 def handle_help(message):
     save_chat_id(message.chat.id)
-    bot.reply_to(message,"V23 ANTI-SPAM 3X FIX 🔥\n/pasti BRMS.JK - cek PASTI 80%+\n/bawah BRMS.JK - cek masih bawah? (early)\n/scan pasti - 80%+ pasti\n/scan bawah - TOP3 100% WAJIB Pump<10%\n/scan - semua 70%+\nAuto 09:15 & 15:30 TOP3 100% | /testnotif /ceknotif")
+    bot.reply_to(message,"V24 3X SEHARI 3X FIX 🔥\n/pasti BRMS.JK - cek PASTI 80%+\n/bawah BRMS.JK - cek masih bawah? (early)\n/scan pasti - 80%+ pasti\n/scan bawah - TOP3 100% WAJIB Pump<10%\n/scan - semua 70%+\nAuto 09:15 & 15:30 TOP3 100% | /testnotif /ceknotif")
 @bot.message_handler(commands=['testnotif','ceknotif','cekid'])
 def handle_testnotif(message):
     save_chat_id(message.chat.id)
@@ -533,7 +575,7 @@ def handle_scan(message):
             try: min_price=int(a); break
             except: pass
     if bawah_mode:
-        loading=bot.reply_to(message,f"🔍 V23 ANTI-SPAM Scanning >{min_price} Pump<10%...")
+        loading=bot.reply_to(message,f"🔍 V24 3X SEHARI Scanning >{min_price} Pump<10%...")
         try:
             results=[]
             for sym in WATCHLIST[:60]:
@@ -546,19 +588,19 @@ def handle_scan(message):
                 if results[idx]['score'] < 95:
                     results[idx]['score']=95
             if results:
-                txt=f"🟢 V23 ANTI-SPAM - SUPER DI BAWAH {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nPump3<10% Pump5<15% Wick<6% Dist20<8% RSI45-60 Total {len(results)}\n\n"
+                txt=f"🟢 V24 3X SEHARI - SUPER DI BAWAH {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nPump3<10% Pump5<15% Wick<6% Dist20<8% RSI45-60 Total {len(results)}\n\n"
                 for i,r in enumerate(results[:15],1):
                     txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% Pump {r['pump3']:.0f}% RSI {r['rsi']:.0f} Vol {r['vol']:.1f}x Dist20 {r['dist20']:.0f}%\n   {r['reasons'][0] if r['reasons'] else ''}\n   /bawah {r['symbol'].lower()}.jk\n\n"
                 txt+="TOP3 WAJIB 100%! SUPER DI BAWAH!"
             else:
-                txt=f"🔍 V23 ANTI-SPAM >{min_price} - Gak ada ULTRA BAWAH hari ini, filter ketat!"
+                txt=f"🔍 V24 3X SEHARI >{min_price} - Gak ada ULTRA BAWAH hari ini, filter ketat!"
             bot.reply_to(message,txt)
             try: bot.delete_message(loading.chat.id,loading.message_id)
             except: pass
         except Exception as e:
             bot.edit_message_text(f"Error: {e}"[:400],loading.chat.id,loading.message_id)
     elif pasti_mode:
-        loading=bot.reply_to(message,f"🔍 V23 ANTI-SPAM Scanning >{min_price} 80%+...")
+        loading=bot.reply_to(message,f"🔍 V24 3X SEHARI Scanning >{min_price} 80%+...")
         try:
             results=[]
             for sym in WATCHLIST[:60]:
@@ -576,14 +618,14 @@ def handle_scan(message):
                     txt+=f"{i}. {r['symbol']} - {r['close']:.0f} | {r['score']}% RSI {r['rsi']:.0f} Vol {r['vol']:.1f}x\n   {r['reasons'][0] if r['reasons'] else ''}\n   /pasti {r['symbol'].lower()}.jk\n\n"
                 txt+="Ini yang paling aman!"
             else:
-                txt=f"🔍 V23 ANTI-SPAM >{min_price} Gak ada yang PASTI 80%+ hari ini. Cek /scan bawah"
+                txt=f"🔍 V24 3X SEHARI >{min_price} Gak ada yang PASTI 80%+ hari ini. Cek /scan bawah"
             bot.reply_to(message,txt)
             try: bot.delete_message(loading.chat.id,loading.message_id)
             except: pass
         except Exception as e:
             bot.edit_message_text(f"Error: {e}"[:400],loading.chat.id,loading.message_id)
     else:
-        loading=bot.reply_to(message,f"🔍 V23 ANTI-SPAM Scanning >{min_price} 70%+...")
+        loading=bot.reply_to(message,f"🔍 V24 3X SEHARI Scanning >{min_price} 70%+...")
         try:
             results=[]
             for sym in WATCHLIST[:60]:
@@ -608,7 +650,7 @@ def handle_scan(message):
                     results.append({'symbol':sym.replace('.JK',''), 'close':close, 'score':score, 'vol':vol, 'rsi':rsi, 'reasons':reasons})
             results=sorted(results,key=lambda x:x['score'],reverse=True)
             if not results:
-                txt=f"🔍 V23 ANTI-SPAM >{min_price} Gak ada 70%+ hari ini. Coba /scan bawah"
+                txt=f"🔍 V24 3X SEHARI >{min_price} Gak ada 70%+ hari ini. Coba /scan bawah"
             else:
                 txt=f"🔥 V22 TOP3 100% SCAN 70%+ - {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nTotal {len(results)}\n\n"
                 for i,r in enumerate(results[:15],1):
@@ -622,7 +664,7 @@ def handle_scan(message):
 if __name__=="__main__":
     start_anti_tidur()
     start_auto()
-    print("Bot V23 ANTI-SPAM 3X FIX running...")
+    print("Bot V24 3X SEHARI 09:15 12:00 15:30 running...")
     try:
         bot.remove_webhook()
         time.sleep(2)
