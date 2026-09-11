@@ -383,7 +383,7 @@ def analyze_bawah(symbol, min_price=50, strict=True):
                 if pump3 > 5: return None
                 if pump3 < -8: return None
             else:
-                # V35 FALLBACK TETAP SUPER KETAT BULLISH DISKON!
+                # V36 FALLBACK TETAP SUPER KETAT BULLISH DISKON!
                 if pump3 > 7: return None
                 if pump3 < -10: return None
         else: pump3=0
@@ -495,7 +495,7 @@ def analyze_ijo_jual(symbol, min_price=50):
 
 
 def analyze_gorengan_pasti(symbol, min_price=30):
-    # V35 GORENGAN KHUSUS - lebih agresif, cari yang mau ARA!
+    # V36 GORENGAN KHUSUS - lebih agresif, cari yang mau ARA!
     try:
         df,final_sym=get_data_realtime(symbol)
         if df is None: return None
@@ -532,7 +532,7 @@ def auto_notif_loop():
         try:
             now=datetime.datetime.now(WIB); today_str=now.strftime('%Y-%m-%d'); jam=now.hour*100+now.minute
             print(f"Loop {now} CHAT={len(CHAT_IDS)} GORENG={LAST_GORENG_DATE} PAGI={LAST_PAGI_DATE} SIANG={LAST_SIANG_DATE} SORE={LAST_NOTIF_DATE}")
-            # V35 AUTO-NOTIF GORENGAN 09:30 - HUNTING ARA
+            # V36 AUTO-NOTIF GORENGAN 09:30 - HUNTING ARA
             if 930 <= jam <= 945 and LAST_GORENG_DATE != today_str:
                 print("V35 AUTO GORENGAN 09:30 scanning...")
                 try:
@@ -584,7 +584,7 @@ def auto_notif_loop():
                 for sym in WATCHLIST[:60]:
                     r=analyze_ijo_jual(sym, min_price=50)
                     if r: results_ijo.append(r)
-                txt=f"☀️ V35 SIANG 12:00 {today_str} - BELI MERAH JUAL IJO\n"
+                txt=f"☀️ V36 SIANG 12:00 {today_str} - BELI MERAH JUAL IJO\n"
                 if results_bawah:
                     txt+=f"🔴 {len(results_bawah)} MERAH DISKON (BELI):\n"
                     for i,r in enumerate(results_bawah[:3],1): txt+=f"{i}. {r['symbol']} Pump {r['pump3']:.0f}% - BELI!\n"
@@ -603,7 +603,7 @@ def auto_notif_loop():
                 for sym in WATCHLIST[:60]:
                     r=analyze_ijo_jual(sym, min_price=50)
                     if r: results_ijo.append(r)
-                txt=f"🔥 V35 SORE 15:30 {today_str} - BELI MERAH JUAL IJO\n"
+                txt=f"🔥 V36 SORE 15:30 {today_str} - BELI MERAH JUAL IJO\n"
                 if results_bawah: txt+=f"🔴 {len(results_bawah)} MERAH DISKON BESOK BELI\n"
                 if results_ijo: txt+=f"🟢 {len(results_ijo)} IJO TINGGI JUAL SEKARANG\n"
                 for cid in list(CHAT_IDS):
@@ -760,7 +760,7 @@ def handle_scan(message):
             results=sorted(results,key=lambda x:x['score'],reverse=True)
             for idx in range(min(3, len(results))): results[idx]['score']=100
             if results:
-                txt=f"🔥 V35 REALTIME BULLISH PASTI 80%+ {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n"
+                txt=f"🔥 V36 REALTIME BULLISH PASTI 80%+ {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n"
                 for i,r in enumerate(results[:3],1): txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}%\n   /pasti {r['symbol'].lower()}.jk\n\n"
             else: txt=f"Gak ada PASTI"
             bot.reply_to(message,txt)
@@ -792,7 +792,7 @@ def handle_scan(message):
 if __name__=="__main__":
     start_anti_tidur()
     start_auto()
-    print("Bot V35 AUTO GORENGAN 09:30 REALTIME MERAH INTRADAY 80 SAHAM 09:30 09:51 12:00 15:30 running...")
+    print("Bot V36 AUTO GORENGAN 09:30 REALTIME MERAH INTRADAY 80 SAHAM 09:30 09:51 12:00 15:30 running...")
     try:
         bot.remove_webhook()
         time.sleep(2)
