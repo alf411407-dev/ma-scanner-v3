@@ -70,11 +70,11 @@ start_time=time.time()
 @app.route('/')
 def home():
     uptime=int(time.time()-start_time)
-    return f"Bot V33 REALTIME FIX MERAH INTRADAY 80 SAHAM 09:51 12:00 15:30 - Uptime {uptime//3600}h"
+    return f"Bot V34 REALTIME GORENGAN KHUSUS MERAH INTRADAY 80 SAHAM 09:51 12:00 15:30 - Uptime {uptime//3600}h"
 @app.route('/health')
-def health(): return "OK V33 REALTIME BULLISH DISKON ONLY 80 SAHAM",200
+def health(): return "OK V34 GORENGAN KHUSUS BULLISH DISKON 80 SAHAM",200
 @app.route('/ping')
-def ping(): return "pong V33 REALTIME",200
+def ping(): return "pong V34 GORENGAN",200
 def run_flask(): app.run(host='0.0.0.0',port=8080)
 def keep_alive():
     t=threading.Thread(target=run_flask); t.daemon=True; t.start()
@@ -363,7 +363,7 @@ def analyze_bawah(symbol, min_price=50, strict=True):
         if "NAIK" not in pred: return None
         df_flat=flatten_df(df.copy()); close=pd.Series(df_flat['Close']).dropna()
         if len(close)<25: return None
-        # === V33 REALTIME BULLISH DISKON ONLY - BUKAN BEARISH FALLING KNIFE! ===
+        # === V34 GORENGAN KHUSUS BULLISH DISKON - BUKAN BEARISH FALLING KNIFE! ===
         ema5=float(calc_ema(close,5).iloc[-1]); ema10=float(calc_ema(close,10).iloc[-1]); ema20=float(calc_ema(close,20).iloc[-1])
         e5p=float(calc_ema(close,5).iloc[-2]); e10p=float(calc_ema(close,10).iloc[-2])
         # SYARAT WAJIB BULLISH - kalo bearish langsung reject!
@@ -458,7 +458,7 @@ def analyze_bawah(symbol, min_price=50, strict=True):
     except: return None
 
 def scan_merah_smart():
-    # V33 REALTIME BULLISH DISKON ONLY - bukan bearish falling knife!
+    # V34 GORENGAN KHUSUS BULLISH DISKON - bukan bearish falling knife!
     strict_results=[]
     for sym in WATCHLIST[:80]:
         r=analyze_bawah(sym, min_price=50, strict=True)
@@ -490,6 +490,39 @@ def analyze_ijo_jual(symbol, min_price=50):
         high=float(df_flat['High'].iloc[-1]); wick=(high-curr_close)/curr_close*100 if curr_close>0 else 0
         return {'symbol':symbol.replace('.JK',''), 'close':curr_close, 'score':score, 'vol':vol_ratio, 'rsi':rsi, 'reasons':reasons, 'pump3':pump3, 'pump5':pump5, 'dist20':dist_ema20, 'wick':wick}
     except: return None
+
+
+def analyze_gorengan_pasti(symbol, min_price=30):
+    # V34 GORENGAN KHUSUS - lebih agresif, cari yang mau ARA!
+    try:
+        df,final_sym=get_data_realtime(symbol)
+        if df is None: return None
+        pred,score,reasons,vol_ratio,rsi,curr_close=predict_next(df)
+        if curr_close < min_price: return None
+        df_flat=flatten_df(df.copy()); close=pd.Series(df_flat['Close']).dropna()
+        if len(close)<25: return None
+        ema5=float(calc_ema(close,5).iloc[-1]); ema10=float(calc_ema(close,10).iloc[-1]); ema20=float(calc_ema(close,20).iloc[-1])
+        if ema5 < ema10: return None  # tetap harus bullish
+        # GORENGAN: RSI boleh lebih tinggi 60-85, bukan 50-70
+        if rsi < 55: return None
+        if rsi > 90: return None  # sudah terlalu overbought
+        # Vol harus gede minimal 1.5x
+        if vol_ratio < 1.2: return None
+        # Pump 3 hari 2% sampai 25% = lagi pump gorengan
+        c3=float(close.iloc[-4]) if len(close)>=4 else curr_close
+        pump3=(curr_close-c3)/c3*100 if c3>0 else 0
+        if pump3 < 1: return None  # belum pump
+        if pump3 > 35: return None  # sudah ketinggian, rawan dump
+        c5=float(close.iloc[-6]) if len(close)>=6 else c3
+        pump5=(curr_close-c5)/c5*100 if c5>0 else 0
+        # Harus NAIK prediksinya
+        if "NAIK" not in pred: return None
+        if score < 70: return None
+        high=float(df_flat['High'].iloc[-1]); wick=(high-curr_close)/curr_close*100 if curr_close>0 else 0
+        if wick > 10: return None  # wick panjang = ada bandar jualan
+        return {'symbol':symbol.replace('.JK',''), 'close':curr_close, 'score':score, 'vol':vol_ratio, 'rsi':rsi, 'pump3':pump3, 'pump5':pump5, 'wick':wick, 'reasons':reasons}
+    except: return None
+
 
 def auto_notif_loop():
     global LAST_NOTIF_DATE, LAST_PAGI_DATE, LAST_SIANG_DATE
@@ -573,7 +606,7 @@ def process_stock_request(message, mode="PASTI"):
         bot.delete_message(loading.chat.id,loading.message_id)
     except Exception as e: bot.edit_message_text(f"Error {final_sym}: {e}"[:400],loading.chat.id,loading.message_id)
 
-@bot.message_handler(commands=['ma','pagi','siang','sore','swing','pasti','bawah','merah','ijo','jual','atas'])
+@bot.message_handler(commands=['ma','pagi','siang','sore','swing','pasti','bawah','merah','ijo','jual','atas','goreng','gorengan'])
 def handle_modes(message):
     cmd=message.text.split()[0].replace('/','').upper()
     if cmd in ['MERAH','BAWAH']: cmd='MERAH'
@@ -583,28 +616,51 @@ def handle_modes(message):
 @bot.message_handler(commands=['start','help'])
 def handle_help(message):
     save_chat_id(message.chat.id)
-    bot.reply_to(message,"V33 REALTIME BULLISH DISKON ONLY 🔴🟢 09:51 12:00 15:30\n/merah BBCA.JK - cek MERAH DISKON BULLISH (BELI)\n/scan merah - TOP3 BULLISH DISKON dari 80 saham\n/ijo BBCA.JK - cek IJO TINGGI (JUAL)\n/scan ijo - TOP5 JUAL dari 80 saham\n/pasti BBCA.JK\nPRINSIP: BELI MERAH BULLISH! JANGAN BELI IJO & BEARISH!\nGa tiap hari entry gpp, yg penting diskon bullish!\nAuto 09:51 12:00 15:30 - V33 REALTIME BULLISH")
+    bot.reply_to(message,"V34 GORENGAN KHUSUS BULLISH DISKON 🔴🟢 09:51 12:00 15:30\n/merah BBCA.JK - cek MERAH DISKON BULLISH (BELI)\n/scan merah - TOP3 BULLISH DISKON dari 80 saham\n/ijo BBCA.JK - cek IJO TINGGI (JUAL)\n/scan ijo - TOP5 JUAL dari 80 saham\n/pasti BBCA.JK\nPRINSIP: BELI MERAH BULLISH! JANGAN BELI IJO & BEARISH!\nGa tiap hari entry gpp, yg penting diskon bullish!\nAuto 09:51 12:00 15:30 - V33 REALTIME BULLISH")
 
 @bot.message_handler(commands=['testnotif','ceknotif','cekid'])
 def handle_testnotif(message):
     save_chat_id(message.chat.id)
-    txt = f"✅ TEST NOTIF OK! Chat ID: {message.chat.id} Total: {len(CHAT_IDS)}\nJadwal: 09:51, 12:00, 15:30 WIB\nV33 REALTIME BULLISH DISKON ONLY"
+    txt = f"✅ TEST NOTIF OK! Chat ID: {message.chat.id} Total: {len(CHAT_IDS)}\nJadwal: 09:51, 12:00, 15:30 WIB\nV34 GORENGAN KHUSUS BULLISH DISKON"
     bot.reply_to(message, txt)
 
 @bot.message_handler(commands=['scan'])
 def handle_scan(message):
     save_chat_id(message.chat.id)
     txt_full=message.text.lower()
-    bawah_mode = "bawah" in txt_full or "merah" in txt_full
-    ijo_mode = "ijo" in txt_full or "jual" in txt_full or "atas" in txt_full
-    pasti_mode = "pasti" in txt_full and not bawah_mode and not ijo_mode
-    min_price=50
+    goreng_mode = "goreng" in txt_full
+    bawah_mode = ("bawah" in txt_full or "merah" in txt_full) and not goreng_mode
+    ijo_mode = ("ijo" in txt_full or "jual" in txt_full or "atas" in txt_full) and not goreng_mode
+    pasti_mode = "pasti" in txt_full and not bawah_mode and not ijo_mode and not goreng_mode
+    min_price=30 if goreng_mode else 50
     for a in message.text.split()[1:]:
         if a.isdigit():
             try: min_price=int(a); break
             except: pass
-    if bawah_mode:
-        loading=bot.reply_to(message,f"🔴 V33 REALTIME INTRADAY Scanning >{min_price}...")
+    if goreng_mode:
+        loading=bot.reply_to(message,f"🔥 V34 GORENGAN VIRAL Scanning {len(WATCHLIST_GORENGAN)} saham...")
+        try:
+            results=[]
+            for sym in WATCHLIST_GORENGAN:
+                r=analyze_gorengan_pasti(sym, min_price=min_price)
+                if r: results.append(r)
+            results=sorted(results,key=lambda x: (x['score'], x['pump3'], x['vol']),reverse=True)
+            for idx in range(min(3, len(results))): results[idx]['score']=100
+            if results:
+                txt=f"🔥 V34 GORENGAN VIRAL PASTI ARA! {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n✅ TOP GORENGAN YANG MAU ARA! Vol gede + RSI 55-90! Dari {len(results)} -> TOP5\n\n"
+                for i,r in enumerate(results[:5],1):
+                    status="🔥 MAU ARA! - BELI!" if r['pump3']>=5 and r['vol']>=2 else "⚡ GORENGAN PUMP - WATCH!"
+                    txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% Pump {r['pump3']:.0f}% Vol {r['vol']:.1f}x RSI {r['rsi']:.0f}\n   {status}\n   /goreng {r['symbol'].lower()}.jk\n\n"
+                txt+="⚠️ GORENGAN RISIKO GEDE! TP CEPET +7% +12% JANGAN SERAKAH!"
+            else:
+                txt=f"Gak ada GORENGAN PASTI - Semua sepi atau sudah ketinggian! Tunggu pump!"
+            bot.reply_to(message,txt)
+            try: bot.delete_message(loading.chat.id,loading.message_id)
+            except: pass
+        except Exception as e: bot.edit_message_text(f"Error: {e}"[:400],loading.chat.id,loading.message_id)
+    elif bawah_mode:
+
+        loading=bot.reply_to(message,f"🔴 V34 REALTIME INTRADAY Scanning >{min_price}...")
         try:
             try:
                 results, is_strict, mode_type = scan_merah_realtime_v33()
@@ -617,16 +673,16 @@ def handle_scan(message):
             if results:
                 # V33 - cek mode REALTIME dulu
                 if locals().get('mode_type') == 'REALTIME':
-                    txt=f"🔴 V33 REALTIME MERAH HARI INI! {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n✅ MERAH INTRADAY REALTIME! Diskon hari ini! Dari {len(results)} -> TOP3\n\n"
+                    txt=f"🔴 V34 REALTIME MERAH HARI INI! {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n✅ MERAH INTRADAY REALTIME! Diskon hari ini! Dari {len(results)} -> TOP3\n\n"
                 elif is_strict:
-                    txt=f"🔴 V33 REALTIME BULLISH DISKON 80 SAHAM - BELI PAS MERAH BULLISH! {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n✅ BELI MERAH DISKON BULLISH! Masih uptrend! Dari {len(results)} -> TOP3\n\n"
+                    txt=f"🔴 V34 REALTIME BULLISH DISKON 80 SAHAM - BELI PAS MERAH BULLISH! {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n✅ BELI MERAH DISKON BULLISH! Masih uptrend! Dari {len(results)} -> TOP3\n\n"
                 else:
                     # Cek apakah ada yang pump negatif (merah) walau loose
                     has_merah = any(r.get('pump3', 0) < -0.5 or r.get('intraday', 0) < -0.5 for r in results)
                     if has_merah:
-                        txt=f"🔴 V33 MERAH DISKON TERDEKAT! {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n✅ Ada yang merah tipis! Dari {len(results)} -> TOP3\n\n"
+                        txt=f"🔴 V34 MERAH DISKON TERDEKAT! {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n✅ Ada yang merah tipis! Dari {len(results)} -> TOP3\n\n"
                     else:
-                        txt=f"🟡 V33 IJO SEMUA - PALING DEKET MERAH BULLISH! {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n⚠️ Semua ijo, ini yang paling murah & masih bullish!\nDari {len(results)} -> TOP3 BULLISH DISKON TERDEKAT\n\n"
+                        txt=f"🟡 V34 IJO SEMUA - PALING DEKET MERAH BULLISH! {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n⚠️ Semua ijo, ini yang paling murah & masih bullish!\nDari {len(results)} -> TOP3 BULLISH DISKON TERDEKAT\n\n"
                 for i,r in enumerate(results[:3],1):
                     if r.get('type') == 'REALTIME_INTRADAY':
                         intraday = r.get('intraday', 0)
@@ -645,7 +701,7 @@ def handle_scan(message):
             except: pass
         except Exception as e: bot.edit_message_text(f"Error: {e}"[:400],loading.chat.id,loading.message_id)
     elif ijo_mode:
-        loading=bot.reply_to(message,f"🟢 V33 80 SAHAM JUAL IJO Scanning...")
+        loading=bot.reply_to(message,f"🟢 V34 80 SAHAM JUAL IJO Scanning...")
         try:
             results=[]
             for sym in WATCHLIST[:80]:
@@ -653,7 +709,7 @@ def handle_scan(message):
                 if r: results.append(r)
             results=sorted(results,key=lambda x: (x['pump3'], x['rsi']),reverse=True)
             if results:
-                txt=f"🟢 V33 JUAL IJO 80 SAHAM - WAKTUNYA JUAL! {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nDari {len(results)} ijo tinggi\n\n"
+                txt=f"🟢 V34 JUAL IJO 80 SAHAM - WAKTUNYA JUAL! {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nDari {len(results)} ijo tinggi\n\n"
                 for i,r in enumerate(results[:5],1):
                     txt+=f"{i}. {r['symbol']} {r['close']:.0f} Pump {r['pump3']:.0f}% RSI {r['rsi']:.0f} - JUAL!\n   /ijo {r['symbol'].lower()}.jk\n\n"
                 txt+="JANGAN BELI IJO TINGGI!"
@@ -663,7 +719,7 @@ def handle_scan(message):
             except: pass
         except Exception as e: bot.edit_message_text(f"Error: {e}"[:400],loading.chat.id,loading.message_id)
     elif pasti_mode:
-        loading=bot.reply_to(message,f"🔍 V33 REALTIME BULLISH PASTI Scanning 80 saham...")
+        loading=bot.reply_to(message,f"🔍 V34 REALTIME BULLISH PASTI Scanning 80 saham...")
         try:
             results=[]
             for sym in WATCHLIST[:80]:
@@ -672,7 +728,7 @@ def handle_scan(message):
             results=sorted(results,key=lambda x:x['score'],reverse=True)
             for idx in range(min(3, len(results))): results[idx]['score']=100
             if results:
-                txt=f"🔥 V33 REALTIME BULLISH PASTI 80%+ {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n"
+                txt=f"🔥 V34 REALTIME BULLISH PASTI 80%+ {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n"
                 for i,r in enumerate(results[:3],1): txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}%\n   /pasti {r['symbol'].lower()}.jk\n\n"
             else: txt=f"Gak ada PASTI"
             bot.reply_to(message,txt)
@@ -680,7 +736,7 @@ def handle_scan(message):
             except: pass
         except Exception as e: bot.edit_message_text(f"Error: {e}"[:400],loading.chat.id,loading.message_id)
     else:
-        loading=bot.reply_to(message,f"🔍 V33 REALTIME BULLISH Scanning 80 saham...")
+        loading=bot.reply_to(message,f"🔍 V34 REALTIME BULLISH Scanning 80 saham...")
         try:
             try:
                 results, is_strict, mode_type = scan_merah_realtime_v33()
@@ -691,9 +747,9 @@ def handle_scan(message):
             for idx in range(min(3, len(results))): results[idx]['score']=100
             if results:
                 if is_strict:
-                    txt=f"🔴 V33 REALTIME BULLISH DISKON 80 SAHAM {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n"
+                    txt=f"🔴 V34 REALTIME BULLISH DISKON 80 SAHAM {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n"
                 else:
-                    txt=f"🟡 V33 IJO SEMUA - BULLISH DISKON TERDEKAT {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n"
+                    txt=f"🟡 V34 IJO SEMUA - BULLISH DISKON TERDEKAT {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n"
                 for i,r in enumerate(results[:3],1): txt+=f"{i}. {r['symbol']} Pump {r['pump3']:.0f}% - BELI!\n"
             else: txt=f"Gak ada BULLISH DISKON"
             bot.reply_to(message,txt)
@@ -704,7 +760,7 @@ def handle_scan(message):
 if __name__=="__main__":
     start_anti_tidur()
     start_auto()
-    print("Bot V33 REALTIME FIX MERAH INTRADAY 80 SAHAM 09:51 12:00 15:30 running...")
+    print("Bot V34 REALTIME GORENGAN KHUSUS MERAH INTRADAY 80 SAHAM 09:51 12:00 15:30 running...")
     try:
         bot.remove_webhook()
         time.sleep(2)
