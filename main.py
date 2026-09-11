@@ -640,7 +640,7 @@ def handle_modes(message):
 @bot.message_handler(commands=['start','help'])
 def handle_help(message):
     save_chat_id(message.chat.id)
-    bot.reply_to(message,"V35 GORENGAN KHUSUS BULLISH DISKON 🔴🟢 09:51 12:00 15:30\n/merah BBCA.JK - cek MERAH DISKON BULLISH (BELI)\n/scan merah - TOP3 BULLISH DISKON dari 80 saham\n/ijo BBCA.JK - cek IJO TINGGI (JUAL)\n/scan ijo - TOP5 JUAL dari 80 saham\n/pasti BBCA.JK\nPRINSIP: BELI MERAH BULLISH! JANGAN BELI IJO & BEARISH!\nGa tiap hari entry gpp, yg penting diskon bullish!\nAuto 09:51 12:00 15:30 - V35 REALTIME BULLISH")
+    bot.reply_to(message,"V36 GORENGAN KHUSUS BULLISH DISKON 🔴🟢 09:51 12:00 15:30\n/merah BBCA.JK - cek MERAH DISKON BULLISH (BELI)\n/scan merah - TOP3 BULLISH DISKON dari 80 saham\n/ijo BBCA.JK - cek IJO TINGGI (JUAL)\n/scan ijo - TOP5 JUAL dari 80 saham\n/pasti BBCA.JK\nPRINSIP: BELI MERAH BULLISH! JANGAN BELI IJO & BEARISH!\nGa tiap hari entry gpp, yg penting diskon bullish!\nAuto 09:51 12:00 15:30 - V35 REALTIME BULLISH")
 
 @bot.message_handler(commands=['testnotif','ceknotif','cekid'])
 def handle_testnotif(message):
@@ -671,7 +671,7 @@ def handle_scan(message):
             results=sorted(results,key=lambda x: (x['score'], x['pump3'], x['vol']),reverse=True)
             for idx in range(min(3, len(results))): results[idx]['score']=100
             if results:
-                txt=f"🔥 V35 GORENGAN VIRAL PASTI ARA! {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n✅ TOP GORENGAN YANG MAU ARA! Vol gede + RSI 55-90! Dari {len(results)} -> TOP5\n\n"
+                txt=f"🔥 V36 GORENGAN VIRAL PASTI ARA! {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n✅ TOP GORENGAN YANG MAU ARA! Vol gede + RSI 55-90! Dari {len(results)} -> TOP5\n\n"
                 for i,r in enumerate(results[:5],1):
                     status="🔥 MAU ARA! - BELI!" if r['pump3']>=5 and r['vol']>=2 else "⚡ GORENGAN PUMP - WATCH!"
                     txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% Pump {r['pump3']:.0f}% Vol {r['vol']:.1f}x RSI {r['rsi']:.0f}\n   {status}\n   /goreng {r['symbol'].lower()}.jk\n\n"
