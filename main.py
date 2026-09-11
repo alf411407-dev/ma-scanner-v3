@@ -741,7 +741,7 @@ def handle_scan(message):
             except: pass
         except Exception as e: bot.edit_message_text(f"Error: {e}"[:400],loading.chat.id,loading.message_id)
     elif pasti_mode:
-        loading=bot.reply_to(message,f"🔍 V35 REALTIME BULLISH PASTI Scanning 80 saham...")
+        loading=bot.reply_to(message,f"🔍 V36 REALTIME BULLISH PASTI Scanning 80 saham...")
         try:
             results=[]
             for sym in WATCHLIST[:80]:
