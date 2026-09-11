@@ -70,11 +70,11 @@ start_time=time.time()
 @app.route('/')
 def home():
     uptime=int(time.time()-start_time)
-    return f"Bot V30 BULLISH DISKON ONLY 80 SAHAM 09:51 12:00 15:30 - Uptime {uptime//3600}h"
+    return f"Bot V31 REALTIME BULLISH DISKON ONLY 80 SAHAM 09:51 12:00 15:30 - Uptime {uptime//3600}h"
 @app.route('/health')
-def health(): return "OK V30 BULLISH DISKON ONLY 80 SAHAM",200
+def health(): return "OK V31 REALTIME BULLISH DISKON ONLY 80 SAHAM",200
 @app.route('/ping')
-def ping(): return "pong V30",200
+def ping(): return "pong V31 REALTIME",200
 def run_flask(): app.run(host='0.0.0.0',port=8080)
 def keep_alive():
     t=threading.Thread(target=run_flask); t.daemon=True; t.start()
@@ -124,6 +124,63 @@ def get_data_fixed(symbol,period="6mo",interval="1d"):
                 if 'Close' in df.columns and len(df)>10: return df,sym
         except: pass
     return None, symbol
+
+def get_live_price(symbol_jk):
+    # V30 FIX REALTIME - ambil harga live intraday biar deteksi merah hari ini!
+    try:
+        tk = yf.Ticker(symbol_jk)
+        price = None
+        try:
+            fi = tk.fast_info
+            price = getattr(fi, 'last_price', None)
+            if price is None and isinstance(fi, dict):
+                price = fi.get('last_price')
+        except: pass
+        if not price:
+            try:
+                inf = tk.info
+                price = inf.get('currentPrice') or inf.get('regularMarketPrice')
+            except: pass
+        if not price:
+            try:
+                df1 = tk.history(period="1d", interval="1m", auto_adjust=True)
+                if df1 is not None and not df1.empty:
+                    price = float(df1['Close'].dropna().iloc[-1])
+            except: pass
+        if not price:
+            try:
+                df5 = tk.history(period="5d", interval="5m", auto_adjust=True)
+                if df5 is not None and not df5.empty:
+                    price = float(df5['Close'].dropna().iloc[-1])
+            except: pass
+        if price and price > 0:
+            return float(price)
+    except: pass
+    return None
+
+def get_data_realtime(symbol, period="6mo", interval="1d"):
+    df, final_sym = get_data_fixed(symbol, period, interval)
+    if df is None:
+        return None, symbol
+    try:
+        live = get_live_price(final_sym)
+        if live and live > 0:
+            last_close = float(df['Close'].iloc[-1])
+            if abs(live - last_close) / last_close < 0.20:
+                df = df.copy()
+                df.loc[df.index[-1], 'Close'] = live
+                try:
+                    if live > float(df.loc[df.index[-1], 'High']):
+                        df.loc[df.index[-1], 'High'] = live
+                    if live < float(df.loc[df.index[-1], 'Low']):
+                        df.loc[df.index[-1], 'Low'] = live
+                except: pass
+                df.attrs['live_price'] = live
+                df.attrs['prev_close'] = last_close
+                return df, final_sym
+    except: pass
+    return df, final_sym
+
 def predict_next(df):
     try:
         df=flatten_df(df.copy()); close=pd.Series(df['Close']).dropna()
@@ -187,7 +244,7 @@ def generate_chart_fixed(df,symbol,mode="PASTI"):
 
 def analyze_pasti(symbol, min_price=50, mode="PASTI"):
     try:
-        df,final_sym=get_data_fixed(symbol)
+        df,final_sym=get_data_realtime(symbol)
         if df is None: return None
         pred,score,reasons,vol_ratio,rsi,curr_close=predict_next(df)
         if curr_close < min_price: return None
@@ -197,7 +254,7 @@ def analyze_pasti(symbol, min_price=50, mode="PASTI"):
 
 def analyze_bawah(symbol, min_price=50, strict=True):
     try:
-        df,final_sym=get_data_fixed(symbol)
+        df,final_sym=get_data_realtime(symbol)
         if df is None: return None
         pred,score,reasons,vol_ratio,rsi,curr_close=predict_next(df)
         if curr_close < min_price: return None
@@ -264,8 +321,24 @@ def analyze_bawah(symbol, min_price=50, strict=True):
         else:
             if ema_dist > 5: return None
             if ema_dist < -0.5: return None  # Masih harus bullish!
+        # V31 REALTIME - hitung merah hari ini juga
+        try:
+            # kalo ada live price, hitung intraday change (attrs ada di df asli)
+            check_df = df if hasattr(df, 'attrs') else df_flat
+            if hasattr(check_df, 'attrs') and 'live_price' in check_df.attrs:
+                live_p = check_df.attrs['live_price']
+                prev_c = check_df.attrs['prev_close']
+                intraday = (live_p - prev_c)/prev_c*100 if prev_c>0 else 0
+                # kalo hari ini merah -1% sampai -5% = bonus gede!
+                if -5 <= intraday <= -1:
+                    bonus=15
+                else:
+                    bonus=0
+            else:
+                bonus=0
+        except:
+            bonus=0
         # BONUS BULLISH DISKON
-        bonus=0
         if -3 <= pump3 <= 0: bonus+=15  # Diskon tipis = bullish pullback paling bagus!
         elif -1 <= pump3 <= 1: bonus+=12
         elif 0 <= pump3 <= 2: bonus+=8
@@ -299,7 +372,7 @@ def scan_merah_smart():
 
 def analyze_ijo_jual(symbol, min_price=50):
     try:
-        df,final_sym=get_data_fixed(symbol)
+        df,final_sym=get_data_realtime(symbol)
         if df is None: return None
         pred,score,reasons,vol_ratio,rsi,curr_close=predict_next(df)
         if curr_close < min_price: return None
@@ -390,7 +463,7 @@ def process_stock_request(message, mode="PASTI"):
     txt=message.text.strip(); parts=txt.split(); sym = parts[1] if len(parts)>1 else ""
     if not sym: bot.reply_to(message, f"Pakai /{mode.lower()} KODE"); return
     loading=bot.reply_to(message, f"🔍 {mode} {sym} checking...")
-    df,final_sym=get_data_fixed(sym)
+    df,final_sym=get_data_realtime(sym)
     if df is None: bot.edit_message_text(f"No data {sym}",loading.chat.id,loading.message_id); return
     try:
         buf,cap=generate_chart_fixed(df,final_sym,mode)
@@ -507,7 +580,7 @@ def handle_scan(message):
 if __name__=="__main__":
     start_anti_tidur()
     start_auto()
-    print("Bot V30 BULLISH DISKON ONLY 80 SAHAM 09:51 12:00 15:30 running...")
+    print("Bot V31 REALTIME BULLISH DISKON ONLY 80 SAHAM 09:51 12:00 15:30 running...")
     try:
         bot.remove_webhook()
         time.sleep(2)
