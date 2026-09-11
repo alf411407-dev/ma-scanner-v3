@@ -65,16 +65,19 @@ WATCHLIST_GORENGAN = ["BRMS.JK","DEWA.JK","BUVA.JK","COCO.JK","HATM.JK","BUMI.JK
 "DOOH.JK","WIRG.JK","PYFA.JK","BELI.JK","COIN.JK","CITY.JK","SAGE.JK","IRSX.JK","FILM.JK","MDIA.JK","ZINC.JK","BATR.JK","CASH.JK","ENER.JK","PTMP.JK","MHKI.JK","LABA.JK","CBRE.JK","NANO.JK","TRGU.JK","VKTR.JK","GULA.JK","CBUT.JK","CHEM.JK","PTDU.JK","BBHI.JK","AGRO.JK","BBYB.JK","BANK.JK","BEBS.JK","BELL.JK","BOBA.JK","BOLA.JK","BUMI.JK","CAKK.JK","CUAN.JK","BREN.JK","DMMX.JK","GOTO.JK"]
 WATCHLIST = list(dict.fromkeys(WATCHLIST_BLUE + WATCHLIST_GORENGAN))
 
- app=Flask(__name__)
- start_time=time.time()
- @app.route('/')
- def home():
-     uptime=int(time.time()-start_time)
-     return f"Bot V36 FIX MERAH SEMUA BELI! 80 SAHAM - Uptime {uptime//3600}h"
- @app.route('/health')
- def health(): return "OK V36 MERAH SEMUA BELI!",200
- @app.route('/ping')
- def ping(): return "pong V36",200
+ WATCHLIST = list(dict.fromkeys(WATCHLIST_BLUE + WATCHLIST_GORENGAN))
+
+app=Flask(__name__)
+start_time=time.time()
+@app.route('/')
+def home():
+    uptime=int(time.time()-start_time)
+    return f"Bot V36 FIX MERAH SEMUA BELI! 80 SAHAM - Uptime {uptime//3600}h"
+@app.route('/health')
+def health(): return "OK V36 MERAH SEMUA BELI!",200
+@app.route('/ping')
+def ping(): return "pong V36",200
+def run_flask(): app.run(host='0.0.0.0',port=8080)
 def run_flask(): app.run(host='0.0.0.0',port=8080)
 def keep_alive():
     t=threading.Thread(target=run_flask); t.daemon=True; t.start()
