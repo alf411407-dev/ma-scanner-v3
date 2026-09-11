@@ -758,7 +758,7 @@ def handle_scan(message):
             except: pass
         except Exception as e: bot.edit_message_text(f"Error: {e}"[:400],loading.chat.id,loading.message_id)
     else:
-        loading=bot.reply_to(message,f"🔍 V35 REALTIME BULLISH Scanning 80 saham...")
+        loading=bot.reply_to(message,f"🔍 V36 REALTIME BULLISH Scanning 80 saham...")
         try:
             try:
                 results, is_strict, mode_type = scan_merah_realtime_v33()
