@@ -779,9 +779,9 @@ def handle_scan(message):
             for idx in range(min(3, len(results))): results[idx]['score']=100
             if results:
                 if is_strict:
-                    txt=f"🔴 V35 REALTIME BULLISH DISKON 80 SAHAM {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n"
+                    txt=f"🔴 V36 REALTIME BULLISH DISKON 80 SAHAM {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n"
                 else:
-                    txt=f"🟡 V35 IJO SEMUA - BULLISH DISKON TERDEKAT {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n"
+                    txt=f"🟡 V36 IJO SEMUA - BULLISH DISKON TERDEKAT {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n"
                 for i,r in enumerate(results[:3],1): txt+=f"{i}. {r['symbol']} Pump {r['pump3']:.0f}% - BELI!\n"
             else: txt=f"Gak ada BULLISH DISKON"
             bot.reply_to(message,txt)
