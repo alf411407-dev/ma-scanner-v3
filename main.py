@@ -542,7 +542,7 @@ def auto_notif_loop():
                         except: pass
                     results=sorted(results,key=lambda x: (x['score'], x['pump3'], x['vol']),reverse=True)
                     if results and len(results)>=1:
-                        txt_msg=f"🔥 V35 AUTO GORENGAN ARA 09:30 {today_str}\n🚀 HUNTING GORENGAN VIRAL YANG MAU ARA HARI INI!\nDari {len(results)} gorengan -> TOP5\n\n"
+                        txt_msg=f"🔥 V36 AUTO GORENGAN ARA 09:30 {today_str}\n🚀 HUNTING GORENGAN VIRAL YANG MAU ARA HARI INI!\nDari {len(results)} gorengan -> TOP5\n\n"
                         for i,r in enumerate(results[:5],1):
                             txt_msg+=f"{i}. {r['symbol']} {r['close']:.0f} Pump {r['pump3']:.0f}% Vol {r['vol']:.1f}x RSI {r['rsi']:.0f} - MAU ARA!\n   /goreng {r['symbol'].lower()}.jk\n\n"
                         txt_msg+="⚠️ GORENGAN RISIKO GEDE! TP CEPET +7% +12% JANGAN SERAKAH!\nAuto 09:30 V35"
