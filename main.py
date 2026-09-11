@@ -712,7 +712,7 @@ def handle_scan(message):
                         intraday = r.get('intraday', 0)
                         status=f"🔴 MERAH HARI INI {intraday:.1f}% - DISKON REALTIME!"
                         txt+=f"{i}. {r['symbol']} {r['close']:.0f} ({intraday:.1f}%) {r['score']}% RSI {r['rsi']:.0f}\n   {status}\n   /merah {r['symbol'].lower()}.jk\n\n"
-                        Line 718:     else:
+                   else:
                  # V36 FIX: MERAH SEMUA = BELI! BUKAN WATCH!
                  if r['pump3'] <= -2:
                       status="🔴 BULLISH DISKON GEDE - BELI!"
