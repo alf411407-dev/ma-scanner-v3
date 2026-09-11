@@ -723,7 +723,7 @@ def handle_scan(message):
             except: pass
         except Exception as e: bot.edit_message_text(f"Error: {e}"[:400],loading.chat.id,loading.message_id)
     elif ijo_mode:
-        loading=bot.reply_to(message,f"🟢 V35 80 SAHAM JUAL IJO Scanning...")
+        loading=bot.reply_to(message,f"🟢 V36 80 SAHAM JUAL IJO Scanning...")
         try:
             results=[]
             for sym in WATCHLIST[:80]:
