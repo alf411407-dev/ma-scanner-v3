@@ -255,7 +255,7 @@ def scan_merah_realtime_v33():
 def _compat(): pass
 
 def scan_merah_realtime_v33_real():
-    # V35 - scan merah intraday hari ini dulu, baru fallback ke daily
+    # V36 - scan merah intraday hari ini dulu, baru fallback ke daily
     realtime_results = []
     for sym in WATCHLIST[:80]:
         r = analyze_merah_realtime_intraday(sym, min_price=50)
