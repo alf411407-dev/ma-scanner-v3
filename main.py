@@ -662,7 +662,7 @@ def handle_scan(message):
             try: min_price=int(a); break
             except: pass
     if goreng_mode:
-        loading=bot.reply_to(message,f"🔥 V35 GORENGAN VIRAL Scanning {len(WATCHLIST_GORENGAN)} saham...")
+        loading=bot.reply_to(message,f"🔥 V36 GORENGAN VIRAL Scanning {len(WATCHLIST_GORENGAN)} saham...")
         try:
             results=[]
             for sym in WATCHLIST_GORENGAN:
