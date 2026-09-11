@@ -67,6 +67,8 @@ WATCHLIST = list(dict.fromkeys(WATCHLIST_BLUE + WATCHLIST_GORENGAN))
 
  WATCHLIST = list(dict.fromkeys(WATCHLIST_BLUE + WATCHLIST_GORENGAN))
 
+WATCHLIST = list(dict.fromkeys(WATCHLIST_BLUE + WATCHLIST_GORENGAN))
+
 app=Flask(__name__)
 start_time=time.time()
 @app.route('/')
@@ -77,6 +79,7 @@ def home():
 def health(): return "OK V36 MERAH SEMUA BELI!",200
 @app.route('/ping')
 def ping(): return "pong V36",200
+def run_flask(): app.run(host='0.0.0.0',port=8080)
 def run_flask(): app.run(host='0.0.0.0',port=8080)
 def run_flask(): app.run(host='0.0.0.0',port=8080)
 def keep_alive():
