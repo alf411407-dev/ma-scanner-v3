@@ -126,7 +126,7 @@ def get_data_fixed(symbol,period="6mo",interval="1d"):
     return None, symbol
 
 def get_live_price(symbol_jk):
-    # V35 FIX REALTIME - JK susah 1m, coba banyak interval!
+    # V36 FIX REALTIME - JK susah 1m, coba banyak interval!
     try:
         tk = yf.Ticker(symbol_jk)
         price = None
@@ -189,7 +189,7 @@ def get_data_realtime(symbol, period="6mo", interval="1d"):
     return df, final_sym
 
 def analyze_merah_realtime_intraday(symbol, min_price=50):
-    # V35 - deteksi MERAH HARI INI langsung dari live price vs close kemarin
+    # V36 - deteksi MERAH HARI INI langsung dari live price vs close kemarin
     try:
         df_daily, final_sym = get_data_fixed(symbol)
         if df_daily is None or len(df_daily) < 25:
@@ -423,7 +423,7 @@ def analyze_bawah(symbol, min_price=50, strict=True):
         else:
             if ema_dist > 5: return None
             if ema_dist < -0.5: return None  # Masih harus bullish!
-        # V35 REALTIME - hitung merah hari ini juga
+        # V36 REALTIME - hitung merah hari ini juga
         try:
             # kalo ada live price, hitung intraday change (attrs ada di df asli)
             check_df = df if hasattr(df, 'attrs') else df_flat
@@ -458,7 +458,7 @@ def analyze_bawah(symbol, min_price=50, strict=True):
     except: return None
 
 def scan_merah_smart():
-    # V35 GORENGAN KHUSUS BULLISH DISKON - bukan bearish falling knife!
+    # V36 GORENGAN KHUSUS BULLISH DISKON - bukan bearish falling knife!
     strict_results=[]
     for sym in WATCHLIST[:80]:
         r=analyze_bawah(sym, min_price=50, strict=True)
@@ -532,7 +532,7 @@ def auto_notif_loop():
             print(f"Loop {now} CHAT={len(CHAT_IDS)} GORENG={LAST_GORENG_DATE} PAGI={LAST_PAGI_DATE} SIANG={LAST_SIANG_DATE} SORE={LAST_NOTIF_DATE}")
             # V36 AUTO-NOTIF GORENGAN 09:30 - HUNTING ARA
             if 930 <= jam <= 945 and LAST_GORENG_DATE != today_str:
-                print("V35 AUTO GORENGAN 09:30 scanning...")
+                print("V36 AUTO GORENGAN 09:30 scanning...")
                 try:
                     results=[]
                     for sym in WATCHLIST_GORENGAN:
@@ -561,7 +561,7 @@ def auto_notif_loop():
                     if r: results.append(r)
                 results=sorted(results,key=lambda x:(x['score'], -x['pump3']),reverse=True)
                 for idx in range(min(3, len(results))): results[idx]['score']=100
-                txt=f"🚀 V35 BELI MERAH JUAL IJO PAGI 09:51 {today_str}\n🔴 BELI MERAH DISKON! JANGAN BELI IJO!\n"
+                txt=f"🚀 V36 BELI MERAH JUAL IJO PAGI 09:51 {today_str}\n🔴 BELI MERAH DISKON! JANGAN BELI IJO!\n"
                 if results:
                     txt+=f"🔴 {len(results)} SAHAM MERAH DISKON (BELI SEKARANG):\n\n"
                     for i,r in enumerate(results[:3],1):
@@ -684,7 +684,7 @@ def handle_scan(message):
         except Exception as e: bot.edit_message_text(f"Error: {e}"[:400],loading.chat.id,loading.message_id)
     elif bawah_mode:
 
-        loading=bot.reply_to(message,f"🔴 V35 REALTIME INTRADAY Scanning >{min_price}...")
+        loading=bot.reply_to(message,f"🔴 V36 REALTIME INTRADAY Scanning >{min_price}...")
         try:
             try:
                 results, is_strict, mode_type = scan_merah_realtime_v33()
