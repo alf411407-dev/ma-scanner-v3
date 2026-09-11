@@ -699,16 +699,16 @@ def handle_scan(message):
             if results:
                 # V35 - cek mode REALTIME dulu
                 if locals().get('mode_type') == 'REALTIME':
-                    txt=f"🔴 V35 REALTIME MERAH HARI INI! {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n✅ MERAH INTRADAY REALTIME! Diskon hari ini! Dari {len(results)} -> TOP3\n\n"
+                    txt=f"🔴 V36 REALTIME MERAH HARI INI! {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n✅ MERAH INTRADAY REALTIME! Diskon hari ini! Dari {len(results)} -> TOP3\n\n"
                 elif is_strict:
-                    txt=f"🔴 V35 REALTIME BULLISH DISKON 80 SAHAM - BELI PAS MERAH BULLISH! {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n✅ BELI MERAH DISKON BULLISH! Masih uptrend! Dari {len(results)} -> TOP3\n\n"
+                    txt=f"🔴 V36 REALTIME BULLISH DISKON 80 SAHAM - BELI PAS MERAH BULLISH! {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n✅ BELI MERAH DISKON BULLISH! Masih uptrend! Dari {len(results)} -> TOP3\n\n"
                 else:
                     # Cek apakah ada yang pump negatif (merah) walau loose
                     has_merah = any(r.get('pump3', 0) < -0.5 or r.get('intraday', 0) < -0.5 for r in results)
                     if has_merah:
-                        txt=f"🔴 V35 MERAH DISKON TERDEKAT! {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n✅ Ada yang merah tipis! Dari {len(results)} -> TOP3\n\n"
+                        txt=f"🔴 V36 MERAH DISKON TERDEKAT! {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n✅ Ada yang merah tipis! Dari {len(results)} -> TOP3\n\n"
                     else:
-                        txt=f"🟡 V35 IJO SEMUA - PALING DEKET MERAH BULLISH! {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n⚠️ Semua ijo, ini yang paling murah & masih bullish!\nDari {len(results)} -> TOP3 BULLISH DISKON TERDEKAT\n\n"
+                        txt=f"🟡 V36 IJO SEMUA - PALING DEKET MERAH BULLISH! {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n⚠️ Semua ijo, ini yang paling murah & masih bullish!\nDari {len(results)} -> TOP3 BULLISH DISKON TERDEKAT\n\n"
                 for i,r in enumerate(results[:3],1):
                     if r.get('type') == 'REALTIME_INTRADAY':
                         intraday = r.get('intraday', 0)
