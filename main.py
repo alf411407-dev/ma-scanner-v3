@@ -189,7 +189,7 @@ def get_data_realtime(symbol, period="6mo", interval="1d"):
     return df, final_sym
 
 def analyze_merah_realtime_intraday(symbol, min_price=50):
-    # V32 - deteksi MERAH HARI INI langsung dari live price vs close kemarin
+    # V33 - deteksi MERAH HARI INI langsung dari live price vs close kemarin
     try:
         df_daily, final_sym = get_data_fixed(symbol)
         if df_daily is None or len(df_daily) < 25:
@@ -250,8 +250,12 @@ def analyze_merah_realtime_intraday(symbol, min_price=50):
     except Exception as e:
         return None
 
-def scan_merah_realtime_v32():
-    # V32 - scan merah intraday hari ini dulu, baru fallback ke daily
+def scan_merah_realtime_v33():
+    pass
+def _compat(): pass
+
+def scan_merah_realtime_v33_real():
+    # V33 - scan merah intraday hari ini dulu, baru fallback ke daily
     realtime_results = []
     for sym in WATCHLIST[:80]:
         r = analyze_merah_realtime_intraday(sym, min_price=50)
@@ -377,7 +381,7 @@ def analyze_bawah(symbol, min_price=50, strict=True):
                 if pump3 > 5: return None
                 if pump3 < -8: return None
             else:
-                # V32 FALLBACK TETAP SUPER KETAT BULLISH DISKON!
+                # V33 FALLBACK TETAP SUPER KETAT BULLISH DISKON!
                 if pump3 > 7: return None
                 if pump3 < -10: return None
         else: pump3=0
@@ -603,7 +607,7 @@ def handle_scan(message):
         loading=bot.reply_to(message,f"🔴 V33 REALTIME INTRADAY Scanning >{min_price}...")
         try:
             try:
-                results, is_strict, mode_type = scan_merah_realtime_v32()
+                results, is_strict, mode_type = scan_merah_realtime_v33()
             except Exception as e2:
                 print(f"realtime fail {e2}")
                 results, is_strict = scan_merah_smart()
@@ -641,7 +645,7 @@ def handle_scan(message):
             except: pass
         except Exception as e: bot.edit_message_text(f"Error: {e}"[:400],loading.chat.id,loading.message_id)
     elif ijo_mode:
-        loading=bot.reply_to(message,f"🟢 V32 80 SAHAM JUAL IJO Scanning...")
+        loading=bot.reply_to(message,f"🟢 V33 80 SAHAM JUAL IJO Scanning...")
         try:
             results=[]
             for sym in WATCHLIST[:80]:
@@ -679,7 +683,7 @@ def handle_scan(message):
         loading=bot.reply_to(message,f"🔍 V33 REALTIME BULLISH Scanning 80 saham...")
         try:
             try:
-                results, is_strict, mode_type = scan_merah_realtime_v32()
+                results, is_strict, mode_type = scan_merah_realtime_v33()
             except:
                 results, is_strict = scan_merah_smart()
                 mode_type = "DAILY"
