@@ -65,16 +65,16 @@ WATCHLIST_GORENGAN = ["BRMS.JK","DEWA.JK","BUVA.JK","COCO.JK","HATM.JK","BUMI.JK
 "DOOH.JK","WIRG.JK","PYFA.JK","BELI.JK","COIN.JK","CITY.JK","SAGE.JK","IRSX.JK","FILM.JK","MDIA.JK","ZINC.JK","BATR.JK","CASH.JK","ENER.JK","PTMP.JK","MHKI.JK","LABA.JK","CBRE.JK","NANO.JK","TRGU.JK","VKTR.JK","GULA.JK","CBUT.JK","CHEM.JK","PTDU.JK","BBHI.JK","AGRO.JK","BBYB.JK","BANK.JK","BEBS.JK","BELL.JK","BOBA.JK","BOLA.JK","BUMI.JK","CAKK.JK","CUAN.JK","BREN.JK","DMMX.JK","GOTO.JK"]
 WATCHLIST = list(dict.fromkeys(WATCHLIST_BLUE + WATCHLIST_GORENGAN))
 
-app=Flask(__name__)
-start_time=time.time()
-@app.route('/')
-def home():
-    uptime=int(time.time()-start_time)
-    return f"Bot V35 AUTO GORENGAN 09:30 REALTIME MERAH INTRADAY 80 SAHAM 09:30 09:51 12:00 15:30 - Uptime {uptime//3600}h"
-@app.route('/health')
-def health(): return "OK V35 GORENGAN KHUSUS BULLISH DISKON 80 SAHAM",200
-@app.route('/ping')
-def ping(): return "pong V35 GORENGAN",200
+68 app=Flask(__name__)
+69 start_time=time.time()
+70 @app.route('/')
+71 def home():
+72     uptime=int(time.time()-start_time)
+73     return f"Bot V36 FIX MERAH SEMUA BELI! 80 SAHAM - Uptime {uptime//3600}h"
+74 @app.route('/health')
+75 def health(): return "OK V36 MERAH SEMUA BELI!",200
+76 @app.route('/ping')
+77 def ping(): return "pong V36",200
 def run_flask(): app.run(host='0.0.0.0',port=8080)
 def keep_alive():
     t=threading.Thread(target=run_flask); t.daemon=True; t.start()
@@ -713,10 +713,16 @@ def handle_scan(message):
                         status=f"🔴 MERAH HARI INI {intraday:.1f}% - DISKON REALTIME!"
                         txt+=f"{i}. {r['symbol']} {r['close']:.0f} ({intraday:.1f}%) {r['score']}% RSI {r['rsi']:.0f}\n   {status}\n   /merah {r['symbol'].lower()}.jk\n\n"
                     else:
-                        if is_strict:
+                                                if is_strict:
                             status="🔴 BULLISH DISKON GEDE - BELI!" if r['pump3'] <= -2 else "🔴 BULLISH DISKON - BELI!"
                         else:
-                            status="🟡 BULLISH DISKON TERDEKAT - WATCH!"
+                            # V36 FIX: MERAH SEMUA = BELI! BUKAN WATCH!
+                            if r['pump3'] <= -2:
+                                status="🔴 BULLISH DISKON GEDE - BELI!"
+                            elif r['pump3'] <= -0.5:
+                                status="🔴 BULLISH DISKON - BELI!"
+                            else:
+                                status="🟡 BULLISH DISKON TERDEKAT - WATCH!"
                         txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% Pump {r['pump3']:.0f}% RSI {r['rsi']:.0f}\n   {status}\n   /merah {r['symbol'].lower()}.jk\n\n"
                 txt+="✅ BELI MERAH BULLISH! BUKAN BEARISH!"
             else: txt=f"Gak ada BULLISH DISKON - Semua ijo tinggi atau bearish! Tunggu! Jual dulu yang ijo!"
