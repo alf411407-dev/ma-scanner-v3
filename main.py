@@ -695,7 +695,7 @@ def handle_scan(message):
             results=sorted(results,key=lambda x: (x['score'], -x['pump3']),reverse=True)
             for idx in range(min(3, len(results))): results[idx]['score']=100
             if results:
-                # V35 - cek mode REALTIME dulu
+                # V36 - cek mode REALTIME dulu
                 if locals().get('mode_type') == 'REALTIME':
                     txt=f"🔴 V36 REALTIME MERAH HARI INI! {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n✅ MERAH INTRADAY REALTIME! Diskon hari ini! Dari {len(results)} -> TOP3\n\n"
                 elif is_strict:
