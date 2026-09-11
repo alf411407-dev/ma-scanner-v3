@@ -70,11 +70,11 @@ start_time=time.time()
 @app.route('/')
 def home():
     uptime=int(time.time()-start_time)
-    return f"Bot V29 SMART FALLBACK 80 SAHAM 09:51 12:00 15:30 - Uptime {uptime//3600}h"
+    return f"Bot V30 BULLISH DISKON ONLY 80 SAHAM 09:51 12:00 15:30 - Uptime {uptime//3600}h"
 @app.route('/health')
-def health(): return "OK V29 SMART FALLBACK 80 SAHAM",200
+def health(): return "OK V30 BULLISH DISKON ONLY 80 SAHAM",200
 @app.route('/ping')
-def ping(): return "pong V29",200
+def ping(): return "pong V30",200
 def run_flask(): app.run(host='0.0.0.0',port=8080)
 def keep_alive():
     t=threading.Thread(target=run_flask); t.daemon=True; t.start()
@@ -203,69 +203,94 @@ def analyze_bawah(symbol, min_price=50, strict=True):
         if curr_close < min_price: return None
         if "NAIK" not in pred: return None
         df_flat=flatten_df(df.copy()); close=pd.Series(df_flat['Close']).dropna()
+        if len(close)<25: return None
+        # === V30 BULLISH DISKON ONLY - BUKAN BEARISH FALLING KNIFE! ===
+        ema5=float(calc_ema(close,5).iloc[-1]); ema10=float(calc_ema(close,10).iloc[-1]); ema20=float(calc_ema(close,20).iloc[-1])
+        e5p=float(calc_ema(close,5).iloc[-2]); e10p=float(calc_ema(close,10).iloc[-2])
+        # SYARAT WAJIB BULLISH - kalo bearish langsung reject!
+        if ema5 < ema10: return None  # EMA5 harus di atas EMA10 = masih bullish
+        if curr_close < ema20 * 0.88: return None  # Jangan beli kalo sudah jebol EMA20 12% = bearish!
+        if curr_close < ema20 * 0.92 and rsi < 40: return None  # Kalo di bawah EMA20 + RSI <40 = bearish kuat!
+        if e5p > ema5 and e10p > ema10: 
+            # EMA5 & EMA10 turun 2 hari berturut = downtrend, skip kecuali strict=False dan sudah dekat bottom
+            if strict: return None
+            if curr_close < ema10: return None
+        # ==========================================================
         if len(close)>=4:
             c3=float(close.iloc[-4]); pump3=(curr_close-c3)/c3*100 if c3>0 else 0
             if strict:
                 if pump3 > 5: return None
                 if pump3 < -8: return None
             else:
-                if pump3 > 10: return None
-                if pump3 < -15: return None
+                # V30 FALLBACK TETAP SUPER KETAT BULLISH DISKON!
+                if pump3 > 7: return None
+                if pump3 < -10: return None
         else: pump3=0
         if len(close)>=6 and strict:
             c5=float(close.iloc[-6]); pump5=(curr_close-c5)/c5*100 if c5>0 else 0
             if pump5 > 15: return None
+            if pump5 < -12: return None  # Jangan yang longsor terus!
         try:
             high=float(df_flat['High'].iloc[-1]); wick=(high-curr_close)/curr_close*100 if curr_close>0 else 0
             body=abs(curr_close - float(df_flat['Open'].iloc[-1]))/curr_close*100 if curr_close>0 else 0
             if strict:
                 if wick > 6: return None
                 if wick > body*2: return None
+            else:
+                if wick > 8: return None
         except: wick=0
-        ema20=float(calc_ema(close,20).iloc[-1]); ema10=float(calc_ema(close,10).iloc[-1]); ema5=float(calc_ema(close,5).iloc[-1])
         dist_ema20=abs(curr_close-ema20)/ema20*100 if ema20>0 else 100
         dist_ema10=abs(curr_close-ema10)/ema10*100 if ema10>0 else 100
+        # DISKON TAPI MASIH DI SEKITAR EMA = BULLISH PULLBACK, BUKAN BEARISH!
         if strict:
             if dist_ema20 > 8: return None
             if dist_ema10 > 5: return None
-            if curr_close > ema5*1.05: return None
+            if curr_close > ema5*1.05: return None  # Sudah di atas EMA5 jauh = bukan diskon
             if not (45 <= rsi <= 62): return None
             if score < 70: return None
             if vol_ratio < 0.8: return None
             if vol_ratio > 3.0: return None
         else:
-            if dist_ema20 > 12: return None
-            if not (35 <= rsi <= 70): return None
-            if score < 50: return None
+            if dist_ema20 > 10: return None
+            if dist_ema10 > 7: return None
+            if not (42 <= rsi <= 65): return None
+            if score < 65: return None
+            if vol_ratio < 0.7: return None
+            if vol_ratio > 3.5: return None
         ema_dist=(ema5-ema10)/ema10*100 if ema10>0 else 0
         if strict:
-            if ema_dist > 4: return None
-            if ema_dist < 0: return None
+            if ema_dist > 4: return None  # Terlalu jauh di atas EMA10 = sudah naik tinggi
+            if ema_dist < 0: return None  # EMA5 di bawah EMA10 = bearish!
+        else:
+            if ema_dist > 5: return None
+            if ema_dist < -0.5: return None  # Masih harus bullish!
+        # BONUS BULLISH DISKON
         bonus=0
-        if -3 <= pump3 <= 0: bonus+=15
+        if -3 <= pump3 <= 0: bonus+=15  # Diskon tipis = bullish pullback paling bagus!
         elif -1 <= pump3 <= 1: bonus+=12
         elif 0 <= pump3 <= 2: bonus+=8
         elif not strict and 2 < pump3 <= 5: bonus+=4
-        if dist_ema20 < 3: bonus+=6
+        if dist_ema20 < 3: bonus+=6  # Deket EMA20 = diskon sehat
         if dist_ema20 < 1.5: bonus+=6
-        if 52 <= rsi <= 58: bonus+=6
+        if 52 <= rsi <= 58: bonus+=6  # RSI ideal bullish
         if 1.0 <= vol_ratio <= 1.8: bonus+=5
         if wick < 2: bonus+=5
+        if ema5 > ema10 > ema20: bonus+=8  # Perfect bullish alignment!
         final_score=min(100, score + bonus)
         if strict and final_score < 85: final_score = 85 + (final_score % 10)
-        if not strict: final_score = max(50, final_score - 15)
+        if not strict: final_score = max(60, final_score - 10)
         return {'symbol':symbol.replace('.JK',''), 'close':curr_close, 'score':int(final_score), 'vol':vol_ratio, 'rsi':rsi, 'reasons':reasons, 'pump3': pump3, 'dist20': dist_ema20, 'ema_dist': ema_dist, 'strict': strict}
     except: return None
 
 def scan_merah_smart():
-    # V29 SMART FALLBACK - kalo ijo semua, kasih yang paling deket merah
+    # V30 BULLISH DISKON ONLY - bukan bearish falling knife!
     strict_results=[]
     for sym in WATCHLIST[:80]:
         r=analyze_bawah(sym, min_price=50, strict=True)
         if r: strict_results.append(r)
     if len(strict_results) >= 3:
         return strict_results, True  # True = strict mode
-    # FALLBACK - relax filter
+    # FALLBACK - tetap bullish diskon!
     loose_results=[]
     for sym in WATCHLIST[:80]:
         r=analyze_bawah(sym, min_price=50, strict=False)
@@ -383,12 +408,12 @@ def handle_modes(message):
 @bot.message_handler(commands=['start','help'])
 def handle_help(message):
     save_chat_id(message.chat.id)
-    bot.reply_to(message,"V29 80 SAHAM SMART FALLBACK 🔴🟢 09:51 12:00 15:30\n/merah BBCA.JK - cek MERAH DISKON (BELI)\n/scan merah - TOP3 BELI dari 80 saham (kalo ijo semua kasih yang paling deket merah)\n/ijo BBCA.JK - cek IJO TINGGI (JUAL)\n/scan ijo - TOP5 JUAL dari 80 saham\n/pasti BBCA.JK\nPRINSIP: BELI MERAH JUAL IJO! JANGAN BELI IJO JUAL MERAH!\nAuto 09:51 12:00 15:30 - V29 SMART")
+    bot.reply_to(message,"V30 BULLISH DISKON ONLY 🔴🟢 09:51 12:00 15:30\n/merah BBCA.JK - cek MERAH DISKON BULLISH (BELI)\n/scan merah - TOP3 BULLISH DISKON dari 80 saham\n/ijo BBCA.JK - cek IJO TINGGI (JUAL)\n/scan ijo - TOP5 JUAL dari 80 saham\n/pasti BBCA.JK\nPRINSIP: BELI MERAH BULLISH! JANGAN BELI IJO & BEARISH!\nGa tiap hari entry gpp, yg penting diskon bullish!\nAuto 09:51 12:00 15:30 - V30 BULLISH")
 
 @bot.message_handler(commands=['testnotif','ceknotif','cekid'])
 def handle_testnotif(message):
     save_chat_id(message.chat.id)
-    txt = f"✅ TEST NOTIF OK! Chat ID: {message.chat.id} Total: {len(CHAT_IDS)}\nJadwal: 09:51, 12:00, 15:30 WIB\nV29 80 SAHAM SMART FALLBACK"
+    txt = f"✅ TEST NOTIF OK! Chat ID: {message.chat.id} Total: {len(CHAT_IDS)}\nJadwal: 09:51, 12:00, 15:30 WIB\nV30 BULLISH DISKON ONLY"
     bot.reply_to(message, txt)
 
 @bot.message_handler(commands=['scan'])
@@ -404,30 +429,30 @@ def handle_scan(message):
             try: min_price=int(a); break
             except: pass
     if bawah_mode:
-        loading=bot.reply_to(message,f"🔴 V29 SMART BELI MERAH Scanning >{min_price}...")
+        loading=bot.reply_to(message,f"🔴 V30 BULLISH DISKON Scanning >{min_price}...")
         try:
             results, is_strict = scan_merah_smart()
             results=sorted(results,key=lambda x: (x['score'], -x['pump3']),reverse=True)
             for idx in range(min(3, len(results))): results[idx]['score']=100
             if results:
                 if is_strict:
-                    txt=f"🔴 V29 BELI MERAH JUAL IJO 80 SAHAM - BELI PAS MERAH! {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n✅ BELI MERAH DISKON! Dari {len(results)} -> TOP3\n\n"
+                    txt=f"🔴 V30 BULLISH DISKON 80 SAHAM - BELI PAS MERAH BULLISH! {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n✅ BELI MERAH DISKON BULLISH! Masih uptrend! Dari {len(results)} -> TOP3\n\n"
                 else:
-                    txt=f"🟡 V29 IJO SEMUA - KASIH YANG PALING DEKET MERAH! {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n⚠️ Semua ijo, ini yang paling murah/lemah - Tunggu merah!\nDari {len(results)} -> TOP3 TERDEKAT MERAH\n\n"
+                    txt=f"🟡 V30 IJO SEMUA - PALING DEKET MERAH BULLISH! {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n⚠️ Semua ijo, ini yang paling murah & masih bullish!\nDari {len(results)} -> TOP3 BULLISH DISKON TERDEKAT\n\n"
                 for i,r in enumerate(results[:3],1):
                     if is_strict:
-                        status="🔴 MERAH DISKON GEDE - BELI!" if r['pump3'] <= -2 else "🔴 MERAH DISKON - BELI!"
+                        status="🔴 BULLISH DISKON GEDE - BELI!" if r['pump3'] <= -2 else "🔴 BULLISH DISKON - BELI!"
                     else:
-                        status="🟡 PALING DEKET MERAH - WATCHLIST!"
+                        status="🟡 BULLISH DISKON TERDEKAT - WATCH!"
                     txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% Pump {r['pump3']:.0f}% RSI {r['rsi']:.0f}\n   {status}\n   /merah {r['symbol'].lower()}.jk\n\n"
-                txt+="✅ BELI MERAH JUAL IJO!"
-            else: txt=f"Gak ada MERAH DISKON - Semua ijo tinggi! Tunggu koreksi! Jual dulu yang ijo!"
+                txt+="✅ BELI MERAH BULLISH! BUKAN BEARISH!"
+            else: txt=f"Gak ada BULLISH DISKON - Semua ijo tinggi atau bearish! Tunggu! Jual dulu yang ijo!"
             bot.reply_to(message,txt)
             try: bot.delete_message(loading.chat.id,loading.message_id)
             except: pass
         except Exception as e: bot.edit_message_text(f"Error: {e}"[:400],loading.chat.id,loading.message_id)
     elif ijo_mode:
-        loading=bot.reply_to(message,f"🟢 V29 80 SAHAM JUAL IJO Scanning...")
+        loading=bot.reply_to(message,f"🟢 V30 80 SAHAM JUAL IJO Scanning...")
         try:
             results=[]
             for sym in WATCHLIST[:80]:
@@ -435,7 +460,7 @@ def handle_scan(message):
                 if r: results.append(r)
             results=sorted(results,key=lambda x: (x['pump3'], x['rsi']),reverse=True)
             if results:
-                txt=f"🟢 V29 JUAL IJO 80 SAHAM - WAKTUNYA JUAL! {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nDari {len(results)} ijo tinggi\n\n"
+                txt=f"🟢 V30 JUAL IJO 80 SAHAM - WAKTUNYA JUAL! {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nDari {len(results)} ijo tinggi\n\n"
                 for i,r in enumerate(results[:5],1):
                     txt+=f"{i}. {r['symbol']} {r['close']:.0f} Pump {r['pump3']:.0f}% RSI {r['rsi']:.0f} - JUAL!\n   /ijo {r['symbol'].lower()}.jk\n\n"
                 txt+="JANGAN BELI IJO TINGGI!"
@@ -445,7 +470,7 @@ def handle_scan(message):
             except: pass
         except Exception as e: bot.edit_message_text(f"Error: {e}"[:400],loading.chat.id,loading.message_id)
     elif pasti_mode:
-        loading=bot.reply_to(message,f"🔍 V29 PASTI Scanning 80 saham...")
+        loading=bot.reply_to(message,f"🔍 V30 BULLISH PASTI Scanning 80 saham...")
         try:
             results=[]
             for sym in WATCHLIST[:80]:
@@ -454,7 +479,7 @@ def handle_scan(message):
             results=sorted(results,key=lambda x:x['score'],reverse=True)
             for idx in range(min(3, len(results))): results[idx]['score']=100
             if results:
-                txt=f"🔥 V29 PASTI 80%+ {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n"
+                txt=f"🔥 V30 BULLISH PASTI 80%+ {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n"
                 for i,r in enumerate(results[:3],1): txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}%\n   /pasti {r['symbol'].lower()}.jk\n\n"
             else: txt=f"Gak ada PASTI"
             bot.reply_to(message,txt)
@@ -462,18 +487,18 @@ def handle_scan(message):
             except: pass
         except Exception as e: bot.edit_message_text(f"Error: {e}"[:400],loading.chat.id,loading.message_id)
     else:
-        loading=bot.reply_to(message,f"🔍 V29 SMART Scanning 80 saham...")
+        loading=bot.reply_to(message,f"🔍 V30 BULLISH Scanning 80 saham...")
         try:
             results, is_strict = scan_merah_smart()
             results=sorted(results,key=lambda x: (x['score'], -x['pump3']),reverse=True)
             for idx in range(min(3, len(results))): results[idx]['score']=100
             if results:
                 if is_strict:
-                    txt=f"🔴 V29 MERAH 80 SAHAM {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n"
+                    txt=f"🔴 V30 BULLISH DISKON 80 SAHAM {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n"
                 else:
-                    txt=f"🟡 V29 IJO SEMUA - PALING DEKET MERAH {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n"
+                    txt=f"🟡 V30 IJO SEMUA - BULLISH DISKON TERDEKAT {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n"
                 for i,r in enumerate(results[:3],1): txt+=f"{i}. {r['symbol']} Pump {r['pump3']:.0f}% - BELI!\n"
-            else: txt=f"Gak ada"
+            else: txt=f"Gak ada BULLISH DISKON"
             bot.reply_to(message,txt)
             try: bot.delete_message(loading.chat.id,loading.message_id)
             except: pass
@@ -482,7 +507,7 @@ def handle_scan(message):
 if __name__=="__main__":
     start_anti_tidur()
     start_auto()
-    print("Bot V29 80 SAHAM SMART FALLBACK BELI MERAH JUAL IJO 09:51 12:00 15:30 running...")
+    print("Bot V30 BULLISH DISKON ONLY 80 SAHAM 09:51 12:00 15:30 running...")
     try:
         bot.remove_webhook()
         time.sleep(2)
