@@ -70,9 +70,9 @@ start_time=time.time()
 @app.route('/')
 def home():
     uptime=int(time.time()-start_time)
-    return f"Bot V36 FIX MERAH SEMUA BELI! 80 SAHAM - Uptime {uptime//3600}h"
+    return f"Bot V36 FIX MERAH SEMUA BELI 80 SAHAM - Uptime {uptime//3600}h"
 @app.route('/health')
-def health(): return "OK V36 MERAH SEMUA BELI!",200
+def health(): return "OK V36 MERAH SEMUA BELI",200
 @app.route('/ping')
 def ping(): return "pong V36",200
 def run_flask(): app.run(host='0.0.0.0',port=8080)
