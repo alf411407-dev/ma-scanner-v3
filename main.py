@@ -713,19 +713,13 @@ def handle_scan(message):
                         status=f"🔴 MERAH HARI INI {intraday:.1f}% - DISKON REALTIME!"
                         txt+=f"{i}. {r['symbol']} {r['close']:.0f} ({intraday:.1f}%) {r['score']}% RSI {r['rsi']:.0f}\n   {status}\n   /merah {r['symbol'].lower()}.jk\n\n"
                         Line 718:     else:
-Line 719:         # V36 FIX: MERAH SEMUA = BELI! BUKAN WATCH!
-Line 720:         if r['pump3'] <= -2:
-Line 721:             status="🔴 BULLISH DISKON GEDE - BELI!"
-Line 722:         elif r['pump3'] <= -0.5:
-Line 723:             status="🔴 BULLISH DISKON - BELI!"
-Line 724:         else:
-Line 725:             status="🟡 BULLISH DISKON TERDEKAT - WATCH!"
-                            if r['pump3'] <= -2:
-                                status="🔴 BULLISH DISKON GEDE - BELI!"
-                            elif r['pump3'] <= -0.5:
-                                status="🔴 BULLISH DISKON - BELI!"
-                            else:
-                                status="🟡 BULLISH DISKON TERDEKAT - WATCH!"
+                 # V36 FIX: MERAH SEMUA = BELI! BUKAN WATCH!
+                 if r['pump3'] <= -2:
+                      status="🔴 BULLISH DISKON GEDE - BELI!"
+                 elif r['pump3'] <= -0.5:
+                      status="🔴 BULLISH DISKON - BELI!"
+                  else:
+                      status="🟡 BULLISH DISKON TERDEKAT - WATCH!"
                         txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% Pump {r['pump3']:.0f}% RSI {r['rsi']:.0f}\n   {status}\n   /merah {r['symbol'].lower()}.jk\n\n"
                 txt+="✅ BELI MERAH BULLISH! BUKAN BEARISH!"
             else: txt=f"Gak ada BULLISH DISKON - Semua ijo tinggi atau bearish! Tunggu! Jual dulu yang ijo!"
