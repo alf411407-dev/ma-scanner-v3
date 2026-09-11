@@ -70,11 +70,11 @@ start_time=time.time()
 @app.route('/')
 def home():
     uptime=int(time.time()-start_time)
-    return f"Bot V31 REALTIME BULLISH DISKON ONLY 80 SAHAM 09:51 12:00 15:30 - Uptime {uptime//3600}h"
+    return f"Bot V32 REALTIME FIX MERAH INTRADAY 80 SAHAM 09:51 12:00 15:30 - Uptime {uptime//3600}h"
 @app.route('/health')
-def health(): return "OK V31 REALTIME BULLISH DISKON ONLY 80 SAHAM",200
+def health(): return "OK V32 REALTIME BULLISH DISKON ONLY 80 SAHAM",200
 @app.route('/ping')
-def ping(): return "pong V31 REALTIME",200
+def ping(): return "pong V32 REALTIME",200
 def run_flask(): app.run(host='0.0.0.0',port=8080)
 def keep_alive():
     t=threading.Thread(target=run_flask); t.daemon=True; t.start()
@@ -126,7 +126,7 @@ def get_data_fixed(symbol,period="6mo",interval="1d"):
     return None, symbol
 
 def get_live_price(symbol_jk):
-    # V30 FIX REALTIME - ambil harga live intraday biar deteksi merah hari ini!
+    # V32 FIX REALTIME - ambil harga live intraday biar deteksi merah hari ini!
     try:
         tk = yf.Ticker(symbol_jk)
         price = None
@@ -180,6 +180,97 @@ def get_data_realtime(symbol, period="6mo", interval="1d"):
                 return df, final_sym
     except: pass
     return df, final_sym
+
+def analyze_merah_realtime_intraday(symbol, min_price=50):
+    # V32 - deteksi MERAH HARI INI langsung dari live price vs close kemarin
+    try:
+        df_daily, final_sym = get_data_fixed(symbol)
+        if df_daily is None or len(df_daily) < 25:
+            return None
+        live = get_live_price(final_sym)
+        if not live or live < min_price:
+            return None
+        # close kemarin = last close daily
+        close_kemarin = float(df_daily['Close'].iloc[-1])
+        # intraday change hari ini
+        intraday_pct = (live - close_kemarin) / close_kemarin * 100 if close_kemarin>0 else 0
+        
+        # HARUS MERAH HARI INI -1% sampai -7% = diskon intraday
+        if intraday_pct > -0.8:  # belum merah
+            return None
+        if intraday_pct < -8:  # longsor terlalu dalam, skip
+            return None
+            
+        # CEK MASIH BULLISH? pakai daily EMA
+        close_series = df_daily['Close'].dropna()
+        ema5 = float(calc_ema(close_series,5).iloc[-1])
+        ema10 = float(calc_ema(close_series,10).iloc[-1])
+        ema20 = float(calc_ema(close_series,20).iloc[-1])
+        rsi = float(calc_rsi(close_series,14).iloc[-1])
+        
+        # Syarat bullish minimal
+        if ema5 < ema10:  # bearish
+            return None
+        if live < ema20 * 0.85:  # jebol terlalu dalam
+            return None
+            
+        # Hitung pump 3 hari pakai live
+        c3 = float(close_series.iloc[-4]) if len(close_series)>=4 else close_kemarin
+        pump3 = (live - c3)/c3*100 if c3>0 else intraday_pct
+        
+        # Score: makin merah intraday makin tinggi (diskon)
+        score = 70
+        if -4 <= intraday_pct <= -1: score += 20
+        elif -6 <= intraday_pct <= -4: score += 15
+        if ema5 > ema10 > ema20: score += 10
+        if 45 <= rsi <= 62: score += 10
+        
+        score = min(100, score)
+        
+        return {
+            'symbol': symbol.replace('.JK',''),
+            'close': live,
+            'close_kemarin': close_kemarin,
+            'intraday': intraday_pct,
+            'score': int(score),
+            'rsi': rsi,
+            'pump3': pump3,
+            'ema5': ema5,
+            'ema10': ema10,
+            'ema20': ema20,
+            'type': 'REALTIME_INTRADAY'
+        }
+    except Exception as e:
+        return None
+
+def scan_merah_realtime_v32():
+    # V32 - scan merah intraday hari ini dulu, baru fallback ke daily
+    realtime_results = []
+    for sym in WATCHLIST[:80]:
+        r = analyze_merah_realtime_intraday(sym, min_price=50)
+        if r:
+            realtime_results.append(r)
+    
+    if len(realtime_results) >= 1:
+        # Sort by intraday paling merah (diskon gede) tapi masih bullish
+        realtime_results = sorted(realtime_results, key=lambda x: (x['score'], -x['intraday']), reverse=True)
+        return realtime_results, True, "REALTIME"
+    
+    # Fallback ke V30 logic daily
+    strict_results=[]
+    for sym in WATCHLIST[:80]:
+        r=analyze_bawah(sym, min_price=50, strict=True)
+        if r: strict_results.append(r)
+    if len(strict_results) >= 3:
+        return strict_results, True, "DAILY_STRICT"
+    
+    loose_results=[]
+    for sym in WATCHLIST[:80]:
+        r=analyze_bawah(sym, min_price=50, strict=False)
+        if r: loose_results.append(r)
+    return loose_results, False, "DAILY_LOOSE"
+
+
 
 def predict_next(df):
     try:
@@ -261,7 +352,7 @@ def analyze_bawah(symbol, min_price=50, strict=True):
         if "NAIK" not in pred: return None
         df_flat=flatten_df(df.copy()); close=pd.Series(df_flat['Close']).dropna()
         if len(close)<25: return None
-        # === V30 BULLISH DISKON ONLY - BUKAN BEARISH FALLING KNIFE! ===
+        # === V32 REALTIME BULLISH DISKON ONLY - BUKAN BEARISH FALLING KNIFE! ===
         ema5=float(calc_ema(close,5).iloc[-1]); ema10=float(calc_ema(close,10).iloc[-1]); ema20=float(calc_ema(close,20).iloc[-1])
         e5p=float(calc_ema(close,5).iloc[-2]); e10p=float(calc_ema(close,10).iloc[-2])
         # SYARAT WAJIB BULLISH - kalo bearish langsung reject!
@@ -279,7 +370,7 @@ def analyze_bawah(symbol, min_price=50, strict=True):
                 if pump3 > 5: return None
                 if pump3 < -8: return None
             else:
-                # V30 FALLBACK TETAP SUPER KETAT BULLISH DISKON!
+                # V32 FALLBACK TETAP SUPER KETAT BULLISH DISKON!
                 if pump3 > 7: return None
                 if pump3 < -10: return None
         else: pump3=0
@@ -321,7 +412,7 @@ def analyze_bawah(symbol, min_price=50, strict=True):
         else:
             if ema_dist > 5: return None
             if ema_dist < -0.5: return None  # Masih harus bullish!
-        # V31 REALTIME - hitung merah hari ini juga
+        # V32 REALTIME - hitung merah hari ini juga
         try:
             # kalo ada live price, hitung intraday change (attrs ada di df asli)
             check_df = df if hasattr(df, 'attrs') else df_flat
@@ -356,7 +447,7 @@ def analyze_bawah(symbol, min_price=50, strict=True):
     except: return None
 
 def scan_merah_smart():
-    # V30 BULLISH DISKON ONLY - bukan bearish falling knife!
+    # V32 REALTIME BULLISH DISKON ONLY - bukan bearish falling knife!
     strict_results=[]
     for sym in WATCHLIST[:80]:
         r=analyze_bawah(sym, min_price=50, strict=True)
@@ -481,12 +572,12 @@ def handle_modes(message):
 @bot.message_handler(commands=['start','help'])
 def handle_help(message):
     save_chat_id(message.chat.id)
-    bot.reply_to(message,"V30 BULLISH DISKON ONLY 🔴🟢 09:51 12:00 15:30\n/merah BBCA.JK - cek MERAH DISKON BULLISH (BELI)\n/scan merah - TOP3 BULLISH DISKON dari 80 saham\n/ijo BBCA.JK - cek IJO TINGGI (JUAL)\n/scan ijo - TOP5 JUAL dari 80 saham\n/pasti BBCA.JK\nPRINSIP: BELI MERAH BULLISH! JANGAN BELI IJO & BEARISH!\nGa tiap hari entry gpp, yg penting diskon bullish!\nAuto 09:51 12:00 15:30 - V30 BULLISH")
+    bot.reply_to(message,"V32 REALTIME BULLISH DISKON ONLY 🔴🟢 09:51 12:00 15:30\n/merah BBCA.JK - cek MERAH DISKON BULLISH (BELI)\n/scan merah - TOP3 BULLISH DISKON dari 80 saham\n/ijo BBCA.JK - cek IJO TINGGI (JUAL)\n/scan ijo - TOP5 JUAL dari 80 saham\n/pasti BBCA.JK\nPRINSIP: BELI MERAH BULLISH! JANGAN BELI IJO & BEARISH!\nGa tiap hari entry gpp, yg penting diskon bullish!\nAuto 09:51 12:00 15:30 - V32 REALTIME BULLISH")
 
 @bot.message_handler(commands=['testnotif','ceknotif','cekid'])
 def handle_testnotif(message):
     save_chat_id(message.chat.id)
-    txt = f"✅ TEST NOTIF OK! Chat ID: {message.chat.id} Total: {len(CHAT_IDS)}\nJadwal: 09:51, 12:00, 15:30 WIB\nV30 BULLISH DISKON ONLY"
+    txt = f"✅ TEST NOTIF OK! Chat ID: {message.chat.id} Total: {len(CHAT_IDS)}\nJadwal: 09:51, 12:00, 15:30 WIB\nV32 REALTIME BULLISH DISKON ONLY"
     bot.reply_to(message, txt)
 
 @bot.message_handler(commands=['scan'])
@@ -502,22 +593,32 @@ def handle_scan(message):
             try: min_price=int(a); break
             except: pass
     if bawah_mode:
-        loading=bot.reply_to(message,f"🔴 V30 BULLISH DISKON Scanning >{min_price}...")
+        loading=bot.reply_to(message,f"🔴 V32 REALTIME INTRADAY Scanning >{min_price}...")
         try:
-            results, is_strict = scan_merah_smart()
+            try:
+                results, is_strict, mode_type = scan_merah_realtime_v32()
+            except Exception as e2:
+                print(f"realtime fail {e2}")
+                results, is_strict = scan_merah_smart()
+                mode_type = "DAILY"
             results=sorted(results,key=lambda x: (x['score'], -x['pump3']),reverse=True)
             for idx in range(min(3, len(results))): results[idx]['score']=100
             if results:
                 if is_strict:
-                    txt=f"🔴 V30 BULLISH DISKON 80 SAHAM - BELI PAS MERAH BULLISH! {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n✅ BELI MERAH DISKON BULLISH! Masih uptrend! Dari {len(results)} -> TOP3\n\n"
+                    txt=f"🔴 V32 REALTIME BULLISH DISKON 80 SAHAM - BELI PAS MERAH BULLISH! {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n✅ BELI MERAH DISKON BULLISH! Masih uptrend! Dari {len(results)} -> TOP3\n\n"
                 else:
-                    txt=f"🟡 V30 IJO SEMUA - PALING DEKET MERAH BULLISH! {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n⚠️ Semua ijo, ini yang paling murah & masih bullish!\nDari {len(results)} -> TOP3 BULLISH DISKON TERDEKAT\n\n"
+                    txt=f"🟡 V32 IJO SEMUA - PALING DEKET MERAH BULLISH! {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n⚠️ Semua ijo, ini yang paling murah & masih bullish!\nDari {len(results)} -> TOP3 BULLISH DISKON TERDEKAT\n\n"
                 for i,r in enumerate(results[:3],1):
-                    if is_strict:
-                        status="🔴 BULLISH DISKON GEDE - BELI!" if r['pump3'] <= -2 else "🔴 BULLISH DISKON - BELI!"
+                    if r.get('type') == 'REALTIME_INTRADAY':
+                        intraday = r.get('intraday', 0)
+                        status=f"🔴 MERAH HARI INI {intraday:.1f}% - DISKON REALTIME!"
+                        txt+=f"{i}. {r['symbol']} {r['close']:.0f} ({intraday:.1f}%) {r['score']}% RSI {r['rsi']:.0f}\n   {status}\n   /merah {r['symbol'].lower()}.jk\n\n"
                     else:
-                        status="🟡 BULLISH DISKON TERDEKAT - WATCH!"
-                    txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% Pump {r['pump3']:.0f}% RSI {r['rsi']:.0f}\n   {status}\n   /merah {r['symbol'].lower()}.jk\n\n"
+                        if is_strict:
+                            status="🔴 BULLISH DISKON GEDE - BELI!" if r['pump3'] <= -2 else "🔴 BULLISH DISKON - BELI!"
+                        else:
+                            status="🟡 BULLISH DISKON TERDEKAT - WATCH!"
+                        txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% Pump {r['pump3']:.0f}% RSI {r['rsi']:.0f}\n   {status}\n   /merah {r['symbol'].lower()}.jk\n\n"
                 txt+="✅ BELI MERAH BULLISH! BUKAN BEARISH!"
             else: txt=f"Gak ada BULLISH DISKON - Semua ijo tinggi atau bearish! Tunggu! Jual dulu yang ijo!"
             bot.reply_to(message,txt)
@@ -525,7 +626,7 @@ def handle_scan(message):
             except: pass
         except Exception as e: bot.edit_message_text(f"Error: {e}"[:400],loading.chat.id,loading.message_id)
     elif ijo_mode:
-        loading=bot.reply_to(message,f"🟢 V30 80 SAHAM JUAL IJO Scanning...")
+        loading=bot.reply_to(message,f"🟢 V32 80 SAHAM JUAL IJO Scanning...")
         try:
             results=[]
             for sym in WATCHLIST[:80]:
@@ -533,7 +634,7 @@ def handle_scan(message):
                 if r: results.append(r)
             results=sorted(results,key=lambda x: (x['pump3'], x['rsi']),reverse=True)
             if results:
-                txt=f"🟢 V30 JUAL IJO 80 SAHAM - WAKTUNYA JUAL! {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nDari {len(results)} ijo tinggi\n\n"
+                txt=f"🟢 V32 JUAL IJO 80 SAHAM - WAKTUNYA JUAL! {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nDari {len(results)} ijo tinggi\n\n"
                 for i,r in enumerate(results[:5],1):
                     txt+=f"{i}. {r['symbol']} {r['close']:.0f} Pump {r['pump3']:.0f}% RSI {r['rsi']:.0f} - JUAL!\n   /ijo {r['symbol'].lower()}.jk\n\n"
                 txt+="JANGAN BELI IJO TINGGI!"
@@ -543,7 +644,7 @@ def handle_scan(message):
             except: pass
         except Exception as e: bot.edit_message_text(f"Error: {e}"[:400],loading.chat.id,loading.message_id)
     elif pasti_mode:
-        loading=bot.reply_to(message,f"🔍 V30 BULLISH PASTI Scanning 80 saham...")
+        loading=bot.reply_to(message,f"🔍 V32 REALTIME BULLISH PASTI Scanning 80 saham...")
         try:
             results=[]
             for sym in WATCHLIST[:80]:
@@ -552,7 +653,7 @@ def handle_scan(message):
             results=sorted(results,key=lambda x:x['score'],reverse=True)
             for idx in range(min(3, len(results))): results[idx]['score']=100
             if results:
-                txt=f"🔥 V30 BULLISH PASTI 80%+ {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n"
+                txt=f"🔥 V32 REALTIME BULLISH PASTI 80%+ {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n"
                 for i,r in enumerate(results[:3],1): txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}%\n   /pasti {r['symbol'].lower()}.jk\n\n"
             else: txt=f"Gak ada PASTI"
             bot.reply_to(message,txt)
@@ -560,16 +661,20 @@ def handle_scan(message):
             except: pass
         except Exception as e: bot.edit_message_text(f"Error: {e}"[:400],loading.chat.id,loading.message_id)
     else:
-        loading=bot.reply_to(message,f"🔍 V30 BULLISH Scanning 80 saham...")
+        loading=bot.reply_to(message,f"🔍 V32 REALTIME BULLISH Scanning 80 saham...")
         try:
-            results, is_strict = scan_merah_smart()
+            try:
+                results, is_strict, mode_type = scan_merah_realtime_v32()
+            except:
+                results, is_strict = scan_merah_smart()
+                mode_type = "DAILY"
             results=sorted(results,key=lambda x: (x['score'], -x['pump3']),reverse=True)
             for idx in range(min(3, len(results))): results[idx]['score']=100
             if results:
                 if is_strict:
-                    txt=f"🔴 V30 BULLISH DISKON 80 SAHAM {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n"
+                    txt=f"🔴 V32 REALTIME BULLISH DISKON 80 SAHAM {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n"
                 else:
-                    txt=f"🟡 V30 IJO SEMUA - BULLISH DISKON TERDEKAT {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n"
+                    txt=f"🟡 V32 IJO SEMUA - BULLISH DISKON TERDEKAT {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\n"
                 for i,r in enumerate(results[:3],1): txt+=f"{i}. {r['symbol']} Pump {r['pump3']:.0f}% - BELI!\n"
             else: txt=f"Gak ada BULLISH DISKON"
             bot.reply_to(message,txt)
@@ -580,7 +685,7 @@ def handle_scan(message):
 if __name__=="__main__":
     start_anti_tidur()
     start_auto()
-    print("Bot V31 REALTIME BULLISH DISKON ONLY 80 SAHAM 09:51 12:00 15:30 running...")
+    print("Bot V32 REALTIME FIX MERAH INTRADAY 80 SAHAM 09:51 12:00 15:30 running...")
     try:
         bot.remove_webhook()
         time.sleep(2)
