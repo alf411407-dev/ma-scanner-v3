@@ -714,7 +714,7 @@ def handle_scan(message):
                         txt+=f"{i}. {r['symbol']} {r['close']:.0f} ({intraday:.1f}%) {r['score']}% RSI {r['rsi']:.0f}\n   {status}\n   /merah {r['symbol'].lower()}.jk\n\n"
                     else:
                         # V36 FIX: MERAH SEMUA = BELI! BUKAN WATCH!
-                                status="🔴 BULLISH DISKON - BELI!"
+                        status="🔴 BULLISH DISKON - BELI!"
                         txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% Pump {r['pump3']:.0f}% RSI {r['rsi']:.0f}\n   {status}\n   /merah {r['symbol'].lower()}.jk\n\n"
                 txt+="✅ BELI MERAH BULLISH! BUKAN BEARISH!"
             else: txt=f"Gak ada BULLISH DISKON - Semua ijo tinggi atau bearish! Tunggu! Jual dulu yang ijo!"
