@@ -76,8 +76,6 @@ def health(): return "OK V36 MERAH SEMUA BELI!",200
 @app.route('/ping')
 def ping(): return "pong V36",200
 def run_flask(): app.run(host='0.0.0.0',port=8080)
-def run_flask(): app.run(host='0.0.0.0',port=8080)
-def run_flask(): app.run(host='0.0.0.0',port=8080)
 def keep_alive():
     t=threading.Thread(target=run_flask); t.daemon=True; t.start()
 def self_ping():
