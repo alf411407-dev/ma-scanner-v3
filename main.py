@@ -507,7 +507,7 @@ def analyze_gorengan_pasti(symbol, min_price=30):
         if rsi < 59: return None
         if rsi > 75: return None  # sudah terlalu overbought
         # Vol harus gede minimal 1.5x
-        if vol_ratio < 1.2: return None
+        if vol_ratio < 3.5: return None
         # Pump 3 hari 2% sampai 25% = lagi pump gorengan
         c3=float(close.iloc[-4]) if len(close)>=4 else curr_close
         pump3=(curr_close-c3)/c3*100 if c3>0 else 0
