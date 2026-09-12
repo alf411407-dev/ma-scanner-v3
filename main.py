@@ -59,8 +59,8 @@ def load_last_dates():
 load_last_dates()
 
 WATCHLIST_BLUE = ["BBCA.JK","BBRI.JK","BMRI.JK","TLKM.JK","ASII.JK","BBNI.JK","UNVR.JK","ICBP.JK","INDF.JK","KLBF.JK","PGEO.JK","ACES.JK","ADRO.JK","ANTM.JK","ARTO.JK","BBTN.JK","BRIS.JK","CPIN.JK","EMTK.JK","EXCL.JK","HRUM.JK","INCO.JK","INDY.JK","INKP.JK","ITMG.JK","JPFA.JK","MDKA.JK","MEDC.JK","PGAS.JK","PTBA.JK","SMGR.JK","TINS.JK","TOWR.JK","UNTR.JK","PWON.JK","BSDE.JK","CTRA.JK","SMRA.JK","LPKR.JK","ELSA.JK","BRPT.JK","ESSA.JK","AKRA.JK","AMRT.JK","BBYB.JK","MEDS.JK","BREN.JK","CUAN.JK","AMMN.JK","MBMA.JK","NCKL.JK","PTRO.JK","RAJA.JK","PGEO.JK","BRMS.JK","DEWA.JK"]
-WATCHLIST_GORENGAN = ["BRMS.JK","DEWA.JK","BUVA.JK","COCO.JK","HATM.JK","BUMI.JK","ENRG.JK","BULL.JK","BRPT.JK","ESSA.JK","BEEF.JK","CARE.JK","INET.JK","BIPI.JK","BIMA.JK","MBTO.JK","BGTG.JK","BWPT.JK","CBMF.JK","CMPP.JK","CRAB.JK","DOID.JK","FIRE.JK","KIJA.JK","HUMI.JK","IOTF.JK","KIOS.JK","KPIG.JK","LMAX.JK","MMLP.JK","MTEL.JK","NASI.JK","NICE.JK","PGEO.JK","PTRO.JK","SGER.JK","SMLE.JK","SRTG.JK","TPIA.JK","WIFI.JK","WOOL.JK","BEST.JK","MINA.JK",
-"DOOH.JK","WIRG.JK","PYFA.JK","BELI.JK","COIN.JK","CITY.JK","SAGE.JK","IRSX.JK","FILM.JK","MDIA.JK","ZINC.JK","BATR.JK","CASH.JK","ENER.JK","PTMP.JK","MHKI.JK","LABA.JK","CBRE.JK","NANO.JK","TRGU.JK","VKTR.JK","GULA.JK","CBUT.JK","CHEM.JK","PTDU.JK","BBHI.JK","AGRO.JK","BBYB.JK","BANK.JK","BEBS.JK","BELL.JK","BOBA.JK","BOLA.JK","BUMI.JK","CAKK.JK","CUAN.JK","BREN.JK","DMMX.JK","BNBR.JK"]
+WATCHLIST_GORENGAN = ["INET.JK","BNBR.JK","BRMS.JK","DEWA.JK","BUVA.JK","COCO.JK","HATM.JK","BUMI.JK","ENRG.JK","BULL.JK","BRPT.JK","ESSA.JK","BIPI.JK","BIMA.JK","MBTO.JK","BGTG.JK","BWPT.JK","CBMF.JK","CMPP.JK","CRAB.JK","DOID.JK","FIRE.JK","KIJA.JK","HUMI.JK","IOTF.JK","KIOS.JK","KPIG.JK","LMAX.JK","MMLP.JK","MTEL.JK","NASI.JK","NICE.JK","PGEO.JK","PTRO.JK","SGER.JK","SMLE.JK","SRTG.JK","TPIA.JK","WIFI.JK","WOOL.JK","BEST.JK","MINA.JK",
+"DOOH.JK","WIRG.JK","PYFA.JK","BELI.JK","COIN.JK","CITY.JK","SAGE.JK","IRSX.JK","FILM.JK","MDIA.JK","ZINC.JK","BATR.JK","CASH.JK","ENER.JK","PTMP.JK","MHKI.JK","LABA.JK","CBRE.JK","NANO.JK","TRGU.JK","VKTR.JK","GULA.JK","CBUT.JK","CHEM.JK","PTDU.JK","BBHI.JK","AGRO.JK","BBYB.JK","BANK.JK","BEBS.JK","BELL.JK","BOBA.JK","BOLA.JK","BUMI.JK","CAKK.JK","CUAN.JK","BREN.JK","DMMX.JK""]
 WATCHLIST = list(dict.fromkeys(WATCHLIST_BLUE + WATCHLIST_GORENGAN))
 
 app=Flask(__name__)
@@ -68,11 +68,11 @@ start_time=time.time()
 @app.route('/')
 def home():
     uptime=int(time.time()-start_time)
-    return f"Bot V37 SUPER KETAT + BUY/SELL LABEL - Uptime {uptime//3600}h"
+    return f"Bot V38 LIBUR TETAP + BUY/SELL LABEL + AMUNISI SENIN - Uptime {uptime//3600}h"
 @app.route('/health')
-def health(): return "OK V37 LABEL",200
+def health(): return "OK V38 LIBUR TETAP",200
 @app.route('/ping')
-def ping(): return "pong V37",200
+def ping(): return "pong V38",200
 def run_flask(): app.run(host='0.0.0.0',port=8080)
 def keep_alive():
     t=threading.Thread(target=run_flask); t.daemon=True; t.start()
@@ -292,7 +292,7 @@ def generate_chart_fixed(df,symbol,mode="PASTI"):
         swing_entry=float(last['Close']); swing_sl=bulet_idx(swing_entry*0.96); swing_tp1=bulet_idx(swing_entry*1.07); swing_tp2=bulet_idx(swing_entry*1.12); swing_tp3=bulet_idx(swing_entry*1.20)
     plt.tight_layout(); buf=io.BytesIO(); plt.savefig(buf,format='png',dpi=180,bbox_inches='tight'); plt.close(fig); buf.seek(0)
     reason_txt="\n".join([f"- {r}" for r in reasons[:5]])
-    cap=f"{plot_df.index[-1].strftime('%Y-%m-%d')} - {symbol.upper()} [{mode}] {pasti_tag}\nClose {float(last['Close']):.0f} | EMA5 {float(plot_df['EMA5'].iloc[-1]):.0f} EMA10 {float(plot_df['EMA10'].iloc[-1]):.0f} EMA20 {float(plot_df['EMA20'].iloc[-1]):.0f} RSI {float(last['RSI']):.1f} Vol {vol_ratio:.1f}x\nTrend {trend}\n\n{icon} PREDIKSI: {pred} {score}% {pasti_tag}\n{reason_txt}\n\nENTRY {swing_entry} | SL {swing_sl} (-4%)\nTP1 {swing_tp1} (+7%) TP2 {swing_tp2} (+12%) TP3 {swing_tp3} (+20%)\nV37 SUPER KETAT + BUY/SELL LABEL"
+    cap=f"{plot_df.index[-1].strftime('%Y-%m-%d')} - {symbol.upper()} [{mode}] {pasti_tag}\nClose {float(last['Close']):.0f} | EMA5 {float(plot_df['EMA5'].iloc[-1]):.0f} EMA10 {float(plot_df['EMA10'].iloc[-1]):.0f} EMA20 {float(plot_df['EMA20'].iloc[-1]):.0f} RSI {float(last['RSI']):.1f} Vol {vol_ratio:.1f}x\nTrend {trend}\n\n{icon} PREDIKSI: {pred} {score}% {pasti_tag}\n{reason_txt}\n\nENTRY {swing_entry} | SL {swing_sl} (-4%)\nTP1 {swing_tp1} (+7%) TP2 {swing_tp2} (+12%) TP3 {swing_tp3} (+20%)\nV38 LIBUR TETAP + BUY/SELL LABEL + AMUNISI SENIN"
     return buf,cap
 
 def analyze_pasti(symbol, min_price=50, mode="PASTI"):
@@ -453,12 +453,26 @@ def analyze_gorengan_pasti(symbol, min_price=30):
         return {'symbol':symbol.replace('.JK',''), 'close':curr_close, 'score':score, 'vol':vol_ratio, 'rsi':rsi, 'pump3':pump3, 'pump5':pump5, 'wick':wick, 'reasons':reasons}
     except: return None
 
+
+def is_libur():
+    # Sabtu=5 Minggu=6
+    try:
+        now = datetime.datetime.now(WIB)
+        if now.weekday() >= 5:
+            return True, "WEEKEND"
+        # Cek jam market tutup? Tetap anggap libur kalo live price ga ada
+        return False, "Buka"
+    except:
+        return False, "Buka"
+
+
 def auto_notif_loop():
     global LAST_NOTIF_DATE, LAST_PAGI_DATE, LAST_SIANG_DATE, LAST_GORENG_DATE
     while True:
         try:
             now=datetime.datetime.now(WIB); today_str=now.strftime('%Y-%m-%d'); jam=now.hour*100+now.minute
-            print(f"Loop {now} CHAT={len(CHAT_IDS)}")
+            libur, libur_type = is_libur()
+            print(f"Loop {now} CHAT={len(CHAT_IDS)} LIBUR={libur}")
             if 930 <= jam <= 945 and LAST_GORENG_DATE != today_str:
                 try:
                     results=[]
@@ -469,7 +483,10 @@ def auto_notif_loop():
                         except: pass
                     results=sorted(results,key=lambda x: (x['score'], x['pump3'], x['vol']),reverse=True)
                     if results and len(results)>=1:
-                        txt_msg=f"🔥 V37 GORENGAN ARA 09:30 {today_str}\nDari {len(results)} gorengan -> TOP5\n\n"
+                        if libur:
+                            txt_msg=f"🏖️ V38 LIBUR - GORENGAN SIAPIN SENIN {today_str}\n🚀 SIAPIN AMUNISI! Dari {len(results)} -> TOP5\n\n"
+                        else:
+                            txt_msg=f"🔥 V38 GORENGAN ARA 09:30 {today_str}\nDari {len(results)} gorengan -> TOP5\n\n"
                         for i,r in enumerate(results[:5],1):
                             txt_msg+=f"{i}. {r['symbol']} {r['close']:.0f} Pump {r['pump3']:.0f}% Vol {r['vol']:.1f}x RSI {r['rsi']:.0f}\n   /goreng {r['symbol'].lower()}.jk\n\n"
                         txt_msg+="⚠️ TP CEPET +7% +12%!\n"
@@ -487,7 +504,10 @@ def auto_notif_loop():
                     if r: results.append(r)
                 results=sorted(results,key=lambda x:(x['score'], -x['pump3']),reverse=True)
                 for idx in range(min(3, len(results))): results[idx]['score']=100
-                txt=f"🚀 V37 PAGI 09:51 {today_str}\n"
+                if libur:
+                    txt=f"🏖️ V38 LIBUR BEI - SIAPIN AMUNISI SENIN! {today_str}\n🔴 DISKON BUAT SENIN PAGI:\n\n"
+                else:
+                    txt=f"🚀 V38 PAGI 09:51 {today_str}\n"
                 if results:
                     txt+=f"🔴 {len(results)} MERAH DISKON (BELI):\n\n"
                     for i,r in enumerate(results[:3],1):
@@ -530,7 +550,7 @@ def handle_modes(message):
 @bot.message_handler(commands=['start','help'])
 def handle_help(message):
     save_chat_id(message.chat.id)
-    bot.reply_to(message,"V37 SUPER KETAT + BUY/SELL LABEL\n/merah BBCA.JK - chart ada BUY DISKON + SL/TP\n/goreng BUMI.JK - chart ada BUY ARA + SL/TP\n/scan merah - TOP3 BULLISH DISKON\n/scan goreng - TOP5 GORENGAN ARA\nFilter sama kaya V36 super ketat!")
+    bot.reply_to(message,"V38 LIBUR TETAP + BUY/SELL LABEL + AMUNISI SENIN\n/merah BBCA.JK - chart ada BUY DISKON + SL/TP\n/goreng BUMI.JK - chart ada BUY ARA + SL/TP\n/scan merah - TOP3 BULLISH DISKON\n/scan goreng - TOP5 GORENGAN ARA\nFilter sama kaya V36 super ketat!")
 
 @bot.message_handler(commands=['testnotif','ceknotif','cekid'])
 def handle_testnotif(message):
@@ -561,7 +581,12 @@ def handle_scan(message):
             results=sorted(results,key=lambda x: (x['score'], x['pump3'], x['vol']),reverse=True)
             for idx in range(min(3, len(results))): results[idx]['score']=100
             if results:
-                txt=f"🔥 V37 GORENGAN SUPER KETAT! {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nDari {len(results)} -> TOP5\n\n"
+                now = datetime.datetime.now(WIB)
+                is_lib, _ = is_libur()
+                if is_lib:
+                    txt=f"🏖️ V38 LIBUR - GORENGAN SIAPIN AMUNISI SENIN! {now.strftime('%d %b %H:%M WIB')}\nDari {len(results)} -> TOP5\n\n"
+                else:
+                    txt=f"🔥 V38 GORENGAN SUPER KETAT! {now.strftime('%d %b %H:%M WIB')}\nDari {len(results)} -> TOP5\n\n"
                 for i,r in enumerate(results[:5],1):
                     txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% Pump {r['pump3']:.0f}% Vol {r['vol']:.1f}x RSI {r['rsi']:.0f}\n   /goreng {r['symbol'].lower()}.jk\n\n"
                 txt+="⚠️ TP CEPET +7% +12%!"
@@ -581,7 +606,12 @@ def handle_scan(message):
             results=sorted(results,key=lambda x: (x['score'], -x['pump3']),reverse=True)
             for idx in range(min(3, len(results))): results[idx]['score']=100
             if results:
-                txt=f"🔴 V37 MERAH SUPER KETAT {datetime.datetime.now(WIB).strftime('%d %b %H:%M WIB')}\nDari {len(results)} -> TOP3\n\n"
+                now = datetime.datetime.now(WIB)
+                is_lib, _ = is_libur()
+                if is_lib:
+                    txt=f"🏖️ V38 LIBUR BEI - SIAPIN AMUNISI SENIN! {now.strftime('%d %b %H:%M WIB')}\n🔴 DISKON BUAT SENIN - Dari {len(results)} -> TOP3\n\n"
+                else:
+                    txt=f"🔴 V38 MERAH SUPER KETAT {now.strftime('%d %b %H:%M WIB')}\nDari {len(results)} -> TOP3\n\n"
                 for i,r in enumerate(results[:3],1):
                     txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% Pump {r['pump3']:.0f}% RSI {r['rsi']:.0f}\n   /merah {r['symbol'].lower()}.jk\n\n"
                 txt+="✅ BELI MERAH BULLISH!"
@@ -596,7 +626,7 @@ def handle_scan(message):
 if __name__=="__main__":
     start_anti_tidur()
     start_auto()
-    print("Bot V37 SUPER KETAT + BUY/SELL LABEL running...")
+    print("Bot V38 LIBUR TETAP + BUY/SELL LABEL + AMUNISI SENIN running...")
     try:
         bot.remove_webhook()
         time.sleep(2)
