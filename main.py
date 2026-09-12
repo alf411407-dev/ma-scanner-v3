@@ -504,8 +504,8 @@ def analyze_gorengan_pasti(symbol, min_price=30):
         ema5=float(calc_ema(close,5).iloc[-1]); ema10=float(calc_ema(close,10).iloc[-1]); ema20=float(calc_ema(close,20).iloc[-1])
         if ema5 < ema10: return None  # tetap harus bullish
         # GORENGAN: RSI boleh lebih tinggi 60-85, bukan 50-70
-        if rsi < 55: return None
-        if rsi > 90: return None  # sudah terlalu overbought
+        if rsi < 59: return None
+        if rsi > 75: return None  # sudah terlalu overbought
         # Vol harus gede minimal 1.5x
         if vol_ratio < 1.2: return None
         # Pump 3 hari 2% sampai 25% = lagi pump gorengan
