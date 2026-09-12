@@ -554,7 +554,7 @@ def handle_help(message):
 @bot.message_handler(commands=['testnotif','ceknotif','cekid'])
 def handle_testnotif(message):
     save_chat_id(message.chat.id)
-    txt = f"✅ V37 LABEL OK! Chat ID: {message.chat.id} Total: {len(CHAT_IDS)}\nV37 SUPER KETAT + BUY/SELL CHART"
+    txt = f"✅ V38 LABEL OK! Chat ID: {message.chat.id} Total: {len(CHAT_IDS)}\nV37 SUPER KETAT + BUY/SELL CHART"
     bot.reply_to(message, txt)
 
 @bot.message_handler(commands=['scan'])
@@ -571,7 +571,7 @@ def handle_scan(message):
             try: min_price=int(a); break
             except: pass
     if goreng_mode:
-        loading=bot.reply_to(message,f"🔥 V37 GORENGAN SUPER KETAT Scanning {len(WATCHLIST_GORENGAN)} saham...")
+        loading=bot.reply_to(message,f"🔥 V38 GORENGAN SUPER KETAT Scanning {len(WATCHLIST_GORENGAN)} saham...")
         try:
             results=[]
             for sym in WATCHLIST_GORENGAN:
@@ -590,13 +590,13 @@ def handle_scan(message):
                     txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% Pump {r['pump3']:.0f}% Vol {r['vol']:.1f}x RSI {r['rsi']:.0f}\n   /goreng {r['symbol'].lower()}.jk\n\n"
                 txt+="⚠️ TP CEPET +7% +12%!"
             else:
-                txt=f"Gak ada GORENGAN - V37 super ketat! Semua pucuk DOOH MBTO ke-filter!"
+                txt=f"Gak ada GORENGAN - V38 super ketat! Semua pucuk DOOH MBTO ke-filter!"
             bot.reply_to(message,txt)
             try: bot.delete_message(loading.chat.id,loading.message_id)
             except: pass
         except Exception as e: bot.edit_message_text(f"Error: {e}"[:400],loading.chat.id,loading.message_id)
     elif bawah_mode:
-        loading=bot.reply_to(message,f"🔴 V37 MERAH SUPER KETAT Scanning >{min_price}...")
+        loading=bot.reply_to(message,f"🔴 V38 MERAH SUPER KETAT Scanning >{min_price}...")
         try:
             results=[]
             for sym in WATCHLIST[:80]:
