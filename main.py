@@ -190,23 +190,25 @@ def get_data_realtime(symbol, period="6mo", interval="1d"):
     return df, final_sym
 
 def get_trend_status(df):
-    """V39 BARU - deteksi trend lengkap"""
+    """V39.1 FIXED - deteksi trend jujur strict > bukan >="""
     try:
         close=pd.Series(flatten_df(df)['Close']).dropna()
         ema5=float(calc_ema(close,5).iloc[-1]); ema10=float(calc_ema(close,10).iloc[-1]); ema20=float(calc_ema(close,20).iloc[-1])
         ema5p=float(calc_ema(close,5).iloc[-2]); ema10p=float(calc_ema(close,10).iloc[-2]); ema20p=float(calc_ema(close,20).iloc[-2])
         rsi=float(calc_rsi(close,14).iloc[-1])
         curr=float(close.iloc[-1])
-        # BULLISH
-        if ema5 > ema10 > ema20 and ema5>ema5p and ema10>ema10p and rsi>=50:
-            return "BULLISH", f"EMA5({ema5:.0f})>EMA10({ema10:.0f})>EMA20({ema20:.0f}) RSI {rsi:.0f}", ema5, ema10, ema20, rsi
-        # BEARISH
-        if ema5 < ema10 < ema20 and ema5<ema5p and ema10<ema10p:
+        # BULLISH STRICT harus >
+        if ema5 > ema10 and ema10 > ema20 and ema5>ema5p and ema10>ema10p and rsi>=50 and curr > ema10:
+            return "BULLISH", f"EMA5({ema5:.0f})>EMA10({ema10:.0f})>EMA20({ema20:.0f}) RSI {rsi:.0f} - UPTREND", ema5, ema10, ema20, rsi
+        # BEARISH STRICT harus <
+        if ema5 < ema10 and ema10 < ema20 and ema5<ema5p and ema10<ema10p and curr < ema10:
             return "BEARISH", f"EMA5({ema5:.0f})<EMA10({ema10:.0f})<EMA20({ema20:.0f}) RSI {rsi:.0f} - DOWN TREND", ema5, ema10, ema20, rsi
         if ema5 < ema10 and curr < ema20*0.95 and rsi<45:
-            return "BEARISH", f"EMA5<EMA10 Harga<EMA20 RSI {rsi:.0f} - BEARISH", ema5, ema10, ema20, rsi
-        # SIDEWAYS
-        return "SIDEWAYS", f"EMA5 {ema5:.0f} EMA10 {ema10:.0f} EMA20 {ema20:.0f} RSI {rsi:.0f}", ema5, ema10, ema20, rsi
+            return "BEARISH", f"EMA5<EMA10 Harga {curr:.0f}<EMA20 {ema20:.0f} RSI {rsi:.0f} - BEARISH", ema5, ema10, ema20, rsi
+        # SIDEWAYS = EMA nempel / sama
+        if abs(ema5-ema10)/ema10*100 < 1.5:
+            return "SIDEWAYS", f"EMA5 {ema5:.0f} ≈ EMA10 {ema10:.0f} EMA20 {ema20:.0f} RSI {rsi:.0f} - NEMPEL TRANSISI", ema5, ema10, ema20, rsi
+        return "SIDEWAYS", f"EMA5 {ema5:.0f} EMA10 {ema10:.0f} EMA20 {ema20:.0f} RSI {rsi:.0f} - SIDEWAYS", ema5, ema10, ema20, rsi
     except Exception as e:
         return "UNKNOWN", str(e), 0,0,0,50
 
@@ -254,6 +256,15 @@ def generate_chart_fixed(df,symbol,mode="PASTI"):
     plot_df=df.tail(100).copy(); pred,score,reasons,vol_ratio,rsi_val,_=predict_next(df)
     trend_status, trend_desc, ema5_v, ema10_v, ema20_v, rsi_v = get_trend_status(df)
     
+    # V39.1 FIXED - sinkronin prediksi sama trend biar ga bentrok
+    if trend_status=="BEARISH":
+        pred="TURUN"; score=min(score, 40)
+        reasons=[f"🔻 BEARISH: {trend_desc}"] + reasons
+    elif trend_status=="SIDEWAYS":
+        if abs(ema5_v-ema10_v)/ema10_v*100 < 1.5:
+            pred="SIDEWAYS"; score=min(score, 65)
+            reasons=[f"➡️ SIDEWAYS NEMPEL: {trend_desc} - Tunggu EMA5>EMA10"] + reasons
+    
     fig, (ax_price, ax_vol) = plt.subplots(2,1,figsize=(11,7),gridspec_kw={'height_ratios':[3,1]},sharex=True)
     ax_price.plot(plot_df.index,plot_df['Close'],label='Close',color='black',linewidth=1.2)
     ax_price.plot(plot_df.index,plot_df['EMA5'],label='EMA5',color='blue',linewidth=1)
@@ -261,17 +272,18 @@ def generate_chart_fixed(df,symbol,mode="PASTI"):
     ax_price.plot(plot_df.index,plot_df['EMA20'],label='EMA20',color='red',linewidth=1)
     last=plot_df.iloc[-1]
     
-    # TREND LABEL V39
+    # TREND LABEL V39.1
     if trend_status=="BULLISH":
         trend_color="#00C853"; trend_icon="🚀 BULLISH TREND"
     elif trend_status=="BEARISH":
         trend_color="#D32F2F"; trend_icon="🔻 BEARISH TREND - JANGAN BELI! PALSU!"
     else:
-        trend_color="#FF9800"; trend_icon="➡️ SIDEWAYS TREND"
+        trend_color="#FF9800"; trend_icon="➡️ SIDEWAYS - TRANSISI NEMPEL"
     
     icon = "🚀" if "NAIK" in pred else "🔻" if "TURUN" in pred else "➡️"
-    pasti_tag = "🔥 PASTI" if score>=80 else "⚡ KEMUNGKINAN" if score>=70 else "⚠️"
-    ax_price.set_title(f"{symbol} [{mode}] {pasti_tag} {pred} {score}% {icon} | {trend_icon} | {float(last['Close']):.0f}",loc='left',fontweight='bold',fontsize=10)
+    pasti_tag = "🔥 PASTI" if score>=80 else "⚡ KEMUNGKINAN" if score>=70 else "⚠️ WASPADA" if score>=50 else "🔻 BEARISH"
+    # Judul jujur pake TREND STATUS bukan MODE
+    ax_price.set_title(f"{symbol} [{trend_status}] {pasti_tag} {pred} {score}% {icon} | {trend_icon} | {float(last['Close']):.0f}",loc='left',fontweight='bold',fontsize=10)
     ax_price.legend(fontsize=8); ax_price.grid(True,linestyle='--',alpha=0.3); ax_vol.grid(True,linestyle='--',alpha=0.3)
     if 'Volume' in plot_df.columns:
         colors=['#089981' if c>=o else '#F23645' for c,o in zip(plot_df['Close'],plot_df['Open'])]
