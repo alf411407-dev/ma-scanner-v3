@@ -1,5 +1,5 @@
 """
-V40.2 REBOUND ALL GORENGAN - FIX DEFI
+V40.3 SUPER LONGGAR REBOUND - FIX DEFI
 Perbaikan: Scan PAGI 09:00 RSI 48-58, bukan SORE 15:00 RSI 60
 Dari kode asli V39 yang ngasih tau sore udah bullish besok merah
 """
@@ -72,7 +72,7 @@ start_time=time.time()
 @app.route('/')
 def home():
     uptime=int(time.time()-start_time)
-    return f"Bot V40.2 REBOUND ALL GORENGAN - Anti Merah Kebalik - Uptime {uptime//3600}h"
+    return f"Bot V40.3 SUPER LONGGAR REBOUND - Anti Merah Kebalik - Uptime {uptime//3600}h"
 @app.route('/health')
 def health(): return "OK V40.1",200
 @app.route('/ping')
@@ -423,20 +423,15 @@ def analyze_gorengan_rebound(symbol, min_price=20):
         low20=float(close.tail(20).min())
         dist_low=(curr_close-low20)/low20*100 if low20>0 else 100
         
-        # === FILTER REBOUND ===
-        # 1. Habis dibanting -5% sampai -25% dalam 3 hari
-        if not (-25 <= pump3 <= 2): return None
-        # 2. RSI oversold mau naik 30-55 (bukan 60+)
-        if not (28 <= rsi <= 55): return None
-        # 3. Vol mulai masuk >1.5x (akumulasi bandar)
-        if vol_ratio < 1.5: return None
-        if vol_ratio > 12: return None
-        # 4. Dekat bottom <8% dari low 20 hari
-        if dist_low > 12: return None
-        # 5. EMA5 mulai naik (ema5 > ema5 previous) = awal rebound
-        if ema5 < ema5p*0.995: return None
-        # 6. Harga masih di bawah EMA20 (masih murah, belum terbang)
-        if curr_close > ema20*1.05: return None
+        # === FILTER REBOUND V40.3 SUPER LONGGAR ===
+        if not (-40 <= pump3 <= 8): return None
+        if not (20 <= rsi <= 60): return None
+        if vol_ratio < 1.0: return None
+        if vol_ratio > 20: return None
+        if dist_low > 25: return None
+        # EMA5 boleh turun dikit, ga wajib naik
+        # if ema5 < ema5p*0.97: return None
+        if curr_close > ema20*1.15: return None
         
         # Scoring rebound
         score=70
@@ -488,18 +483,18 @@ def analyze_gorengan_pasti(symbol, min_price=30):
         if len(close)<25: return None
         ema5=float(calc_ema(close,5).iloc[-1]); ema10=float(calc_ema(close,10).iloc[-1])
         if ema5 < ema10: return None
-        if rsi < 55: return None
-        if rsi > 80: return None
-        if vol_ratio < 2.0: return None
-        if vol_ratio > 10.0: return None
+        if rsi < 50: return None
+        if rsi > 85: return None
+        if vol_ratio < 1.2: return None
+        if vol_ratio > 15.0: return None
         c3=float(close.iloc[-4]) if len(close)>=4 else curr_close
         pump3=(curr_close-c3)/c3*100 if c3>0 else 0
-        if pump3 < 0.5: return None
-        if pump3 > 50: return None
-        if "NAIK" not in pred: return None
-        if score < 60: return None
+        if pump3 < -5: return None
+        if pump3 > 80: return None
+        # if "NAIK" not in pred: return None
+        if score < 40: return None
         high=float(df_flat['High'].iloc[-1]); wick=(high-curr_close)/curr_close*100 if curr_close>0 else 0
-        if wick > 10: return None
+        if wick > 15: return None
         return {'symbol':symbol.replace('.JK',''), 'close':curr_close, 'score':score, 'vol':vol_ratio, 'rsi':rsi, 'reasons':reasons, 'pump3':pump3, 'trend':'BULLISH ARA'}
     except: return None
 
@@ -638,11 +633,11 @@ def handle_scan(message):
                 txt=f"🔥 V40.2 GORENGAN REBOUND {now.strftime('%d %b %H:%M WIB')}\n"
                 if results_rebound:
                     txt+=f"\n💚 REBOUND POTENSI ({len(results_rebound)} saham) - DEFI dkk:\n"
-                    for i,r in enumerate(results_rebound[:5],1):
+                    for i,r in enumerate(results_rebound[:10],1):
                         txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% RSI {r['rsi']:.0f} Vol {r['vol']:.1f}x Pump {r['pump3']:.1f}% Low+{r['dist_low']:.1f}%\n   /goreng {r['symbol'].lower()}.jk\n"
                 if results_ara:
                     txt+=f"\n🚀 ARA LANJUT ({len(results_ara)} saham):\n"
-                    for i,r in enumerate(results_ara[:3],1):
+                    for i,r in enumerate(results_ara[:10],1):
                         txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% Pump {r['pump3']:.0f}% Vol {r['vol']:.1f}x RSI {r['rsi']:.0f}\n   /goreng {r['symbol'].lower()}.jk\n"
                 txt+="\n✅ REBOUND = Beli bawah, TP +7% +12% | ARA = Ikut trend"
             else:
@@ -677,7 +672,7 @@ def handle_scan(message):
 if __name__=="__main__":
     start_anti_tidur()
     start_auto()
-    print("Bot V40.2 REBOUND ALL GORENGAN - Anti Merah Kebalik running...")
+    print("Bot V40.3 SUPER LONGGAR REBOUND - Anti Merah Kebalik running...")
     try:
         bot.remove_webhook()
         time.sleep(2)
