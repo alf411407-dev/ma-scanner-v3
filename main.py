@@ -1,5 +1,5 @@
 """
-V40 PGAS 2800 - FIX V39 MERAH KEBALIK
+V40.1 GORENGAN LONGGAR - FIX DEFI
 Perbaikan: Scan PAGI 09:00 RSI 48-58, bukan SORE 15:00 RSI 60
 Dari kode asli V39 yang ngasih tau sore udah bullish besok merah
 """
@@ -64,7 +64,7 @@ def load_last_dates():
 load_last_dates()
 
 WATCHLIST_BLUE = ["BBCA.JK","BBRI.JK","BMRI.JK","TLKM.JK","ASII.JK","BBNI.JK","UNVR.JK","ICBP.JK","INDF.JK","KLBF.JK","PGEO.JK","ACES.JK","ADRO.JK","ANTM.JK","ARTO.JK","BBTN.JK","BRIS.JK","CPIN.JK","EMTK.JK","EXCL.JK","HRUM.JK","INCO.JK","INDY.JK","INKP.JK","ITMG.JK","JPFA.JK","MDKA.JK","MEDC.JK","PGAS.JK","PTBA.JK","SMGR.JK","TINS.JK","TOWR.JK","UNTR.JK","PWON.JK","BSDE.JK","CTRA.JK","SMRA.JK","LPKR.JK","ELSA.JK","BRPT.JK","ESSA.JK","AKRA.JK","AMRT.JK","BBYB.JK","MEDS.JK","BREN.JK","CUAN.JK","AMMN.JK","MBMA.JK","NCKL.JK","PTRO.JK","RAJA.JK","BRMS.JK","DEWA.JK"]
-WATCHLIST_GORENGAN = ["INET.JK","BNBR.JK","BRMS.JK","DEWA.JK","BUVA.JK","COCO.JK","HATM.JK","BUMI.JK","ENRG.JK","BULL.JK","BRPT.JK","ESSA.JK","BIPI.JK","BIMA.JK","MBTO.JK","BGTG.JK","BWPT.JK","CBMF.JK","CMPP.JK","CRAB.JK","DOID.JK","FIRE.JK","KIJA.JK","HUMI.JK","IOTF.JK","KIOS.JK","KPIG.JK","LMAX.JK","MMLP.JK","MTEL.JK","NASI.JK","NICE.JK","PGEO.JK","PTRO.JK","SGER.JK","SMLE.JK","SRTG.JK","TPIA.JK","WIFI.JK","WOOL.JK","BEST.JK","MINA.JK","DOOH.JK","WIRG.JK","PYFA.JK","BELI.JK","COIN.JK","CITY.JK","SAGE.JK","IRSX.JK","FILM.JK","MDIA.JK","ZINC.JK","BATR.JK","CASH.JK","ENER.JK","PTMP.JK","MHKI.JK","LABA.JK","CBRE.JK","NANO.JK","TRGU.JK","VKTR.JK","GULA.JK","CBUT.JK","CHEM.JK","PTDU.JK","BBHI.JK","AGRO.JK","BBYB.JK","BANK.JK","BEBS.JK","BELL.JK","BOBA.JK","BOLA.JK","CAKK.JK","CUAN.JK","BREN.JK","DMMX.JK"]
+WATCHLIST_GORENGAN = ["DEFI.JK","INET.JK","BNBR.JK","BRMS.JK","DEWA.JK","BUVA.JK","COCO.JK","HATM.JK","BUMI.JK","ENRG.JK","BULL.JK","BRPT.JK","ESSA.JK","BIPI.JK","BIMA.JK","MBTO.JK","BGTG.JK","BWPT.JK","CBMF.JK","CMPP.JK","CRAB.JK","DOID.JK","FIRE.JK","KIJA.JK","HUMI.JK","IOTF.JK","KIOS.JK","KPIG.JK","LMAX.JK","MMLP.JK","MTEL.JK","NASI.JK","NICE.JK","PGEO.JK","PTRO.JK","SGER.JK","SMLE.JK","SRTG.JK","TPIA.JK","WIFI.JK","WOOL.JK","BEST.JK","MINA.JK","DOOH.JK","WIRG.JK","PYFA.JK","BELI.JK","COIN.JK","CITY.JK","SAGE.JK","IRSX.JK","FILM.JK","MDIA.JK","ZINC.JK","BATR.JK","CASH.JK","ENER.JK","PTMP.JK","MHKI.JK","LABA.JK","CBRE.JK","NANO.JK","TRGU.JK","VKTR.JK","GULA.JK","CBUT.JK","CHEM.JK","PTDU.JK","BBHI.JK","AGRO.JK","BBYB.JK","BANK.JK","BEBS.JK","BELL.JK","BOBA.JK","BOLA.JK","CAKK.JK","CUAN.JK","BREN.JK","DMMX.JK"]
 WATCHLIST = list(dict.fromkeys(WATCHLIST_BLUE + WATCHLIST_GORENGAN))
 
 app=Flask(__name__)
@@ -72,11 +72,11 @@ start_time=time.time()
 @app.route('/')
 def home():
     uptime=int(time.time()-start_time)
-    return f"Bot V40 PGAS 2800 AWAL NAIK - Anti Merah Kebalik - Uptime {uptime//3600}h"
+    return f"Bot V40.1 GORENGAN LONGGAR - Anti Merah Kebalik - Uptime {uptime//3600}h"
 @app.route('/health')
-def health(): return "OK V40",200
+def health(): return "OK V40.1",200
 @app.route('/ping')
-def ping(): return "pong V40",200
+def ping(): return "pong V40.1",200
 def run_flask(): app.run(host='0.0.0.0',port=8080)
 def keep_alive():
     t=threading.Thread(target=run_flask); t.daemon=True; t.start()
@@ -431,18 +431,18 @@ def analyze_gorengan_pasti(symbol, min_price=30):
         if len(close)<25: return None
         ema5=float(calc_ema(close,5).iloc[-1]); ema10=float(calc_ema(close,10).iloc[-1])
         if ema5 < ema10: return None
-        if rsi < 59: return None
-        if rsi > 75: return None
-        if vol_ratio < 3.5: return None
-        if vol_ratio > 8.0: return None
+        if rsi < 55: return None
+        if rsi > 80: return None
+        if vol_ratio < 2.0: return None
+        if vol_ratio > 10.0: return None
         c3=float(close.iloc[-4]) if len(close)>=4 else curr_close
         pump3=(curr_close-c3)/c3*100 if c3>0 else 0
-        if pump3 < 1: return None
-        if pump3 > 35: return None
+        if pump3 < 0.5: return None
+        if pump3 > 50: return None
         if "NAIK" not in pred: return None
-        if score < 70: return None
+        if score < 60: return None
         high=float(df_flat['High'].iloc[-1]); wick=(high-curr_close)/curr_close*100 if curr_close>0 else 0
-        if wick > 6: return None
+        if wick > 10: return None
         return {'symbol':symbol.replace('.JK',''), 'close':curr_close, 'score':score, 'vol':vol_ratio, 'rsi':rsi, 'reasons':reasons, 'pump3':pump3, 'trend':'BULLISH ARA'}
     except: return None
 
@@ -610,7 +610,7 @@ def handle_scan(message):
 if __name__=="__main__":
     start_anti_tidur()
     start_auto()
-    print("Bot V40 PGAS 2800 AWAL NAIK - Anti Merah Kebalik running...")
+    print("Bot V40.1 GORENGAN LONGGAR - Anti Merah Kebalik running...")
     try:
         bot.remove_webhook()
         time.sleep(2)
