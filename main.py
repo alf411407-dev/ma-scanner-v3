@@ -1,5 +1,5 @@
 """
-V40.11 BANDAR FIX FINAL - FIX DEFI
+V40.12 BANDAR FIX FINAL - FIX DEFI
 Perbaikan: Scan PAGI 09:00 RSI 48-58, bukan SORE 15:00 RSI 60
 Dari kode asli V39 yang ngasih tau sore udah bullish besok merah
 """
@@ -72,7 +72,7 @@ start_time=time.time()
 @app.route('/')
 def home():
     uptime=int(time.time()-start_time)
-    return f"Bot V40.11 BANDAR FIX FINAL - Anti Merah Kebalik - Uptime {uptime//3600}h"
+    return f"Bot V40.12 BANDAR FIX FINAL - Anti Merah Kebalik - Uptime {uptime//3600}h"
 @app.route('/health')
 def health(): return "OK V40.1",200
 @app.route('/ping')
@@ -397,7 +397,7 @@ def analyze_bawah(symbol, min_price=50, strict=True):
 
 
 def analyze_gorengan_rebound(symbol, min_price=20):
-    """V40.11 REBOUND FIX - Anti Bearish DEWA bug"""
+    """V40.12 REBOUND FIX - Anti Bearish DEWA bug"""
     try:
         df,final_sym=get_data_realtime(symbol)
         if df is None: return None
@@ -425,7 +425,7 @@ def analyze_gorengan_rebound(symbol, min_price=20):
         low20=float(close.tail(20).min())
         dist_low=(curr_close-low20)/low20*100 if low20>0 else 100
         
-        # === FILTER REBOUND V40.11 ANTI BEARISH ===
+        # === FILTER REBOUND V40.12 ANTI BEARISH ===
         if not (-30 <= pump3 <= 5): return None
         if not (25 <= rsi <= 58): return None
         if vol_ratio < 1.2: return None
@@ -448,6 +448,22 @@ def analyze_gorengan_rebound(symbol, min_price=20):
     except:
         return None
 
+
+
+def analyze_campur_mode(min_price=10):
+    res=[]
+    for sym in WATCHLIST[:130]:
+        a=analyze_bandar_mode(sym, min_price)
+        if a:
+            a['tipe']='BANDAR BLUECHIP'
+            res.append(a)
+    for sym in WATCHLIST[:130]:
+        b=analyze_gorengan_rebound(sym, min_price)
+        if b and not any(x['symbol']==b['symbol'] for x in res):
+            b['tipe']='GORENGAN REBOUND'
+            res.append(b)
+    res=sorted(res, key=lambda x: x['score'], reverse=True)[:10]
+    return res
 
 def analyze_bandar_mode(symbol, min_price=30, level=1):
     # level 1 = super ketat, level 2 = medium, level 3 = longgar
@@ -632,7 +648,7 @@ def handle_modes(message):
 @bot.message_handler(commands=['start','help'])
 def handle_help(message):
     save_chat_id(message.chat.id)
-    bot.reply_to(message,"V40.11 BANDAR ADAPTIF - ANTI MERAH KEBALIK! 🟢📈\n/merah BBCA.JK - BUY PAGI RSI 48-58\nV39 dulu scan 15:00 RSI 60 = TELAT besok merah\nV40 sekarang scan 09:00 RSI 48-58 = AWAL NAIK\n/scan merah - TOP3 V40 PAGI AWAL NAIK\n/scan goreng - TOP5 GORENGAN ARA\nPerbaikan: Bandar Adaptif 3 Level Anti Zonk + /scan bandar TOP5!")
+    bot.reply_to(message,"V40.12 BANDAR ADAPTIF - ANTI MERAH KEBALIK! 🟢📈\n/merah BBCA.JK - BUY PAGI RSI 48-58\nV39 dulu scan 15:00 RSI 60 = TELAT besok merah\nV40 sekarang scan 09:00 RSI 48-58 = AWAL NAIK\n/scan merah - TOP3 V40 PAGI AWAL NAIK\n/scan goreng - TOP5 GORENGAN ARA\nPerbaikan: Bandar Adaptif 3 Level Anti Zonk + /scan bandar TOP5!")
 
 @bot.message_handler(commands=['testnotif','ceknotif','cekid'])
 def handle_testnotif(message):
@@ -656,7 +672,7 @@ def handle_scan(message):
             try: min_price=int(a); break
             except: pass
     if bandar_mode:
-        loading=bot.reply_to(message,f"🕵️ V40.11 BANDAR Scanning {len(WATCHLIST)} saham...")
+        loading=bot.reply_to(message,f"🕵️ V40.12 BANDAR Scanning {len(WATCHLIST)} saham...")
         try:
             results=[]
             # coba level 1 ketat dulu
@@ -671,7 +687,7 @@ def handle_scan(message):
             if results:
                 now = datetime.datetime.now(WIB)
                 lvl_text = "KETAT" if lvl==1 else "MEDIUM" if lvl==2 else "LONGGAR"
-                txt=f"🕵️ V40.11 NGEKOR BANDAR {lvl_text} {now.strftime('%d %b %H:%M WIB')}\nBandar akumulasi di bawah (bukan pucuk 135!)\n\n"
+                txt=f"🕵️ V40.12 NGEKOR BANDAR {lvl_text} {now.strftime('%d %b %H:%M WIB')}\n95% AKUMULASI BEARISH - SIAP REBOUND (bukan pucuk 135!)\n\n"
                 for i,r in enumerate(results[:5],1):
                     vol_tag="🔥 VOL NAIK" if r['vol_naik'] else ""
                     txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% RSI {r['rsi']:.0f} Vol {r['vol']:.1f}x Low+{r['dist_low']:.1f}% {vol_tag}\n   Pump {r['pump3']:.1f}% EMA5 {r['ema5']:.0f}>EMA20 {r['ema20']:.0f}\n   /bandar {r['symbol'].lower()}.jk\n\n"
@@ -706,7 +722,7 @@ def handle_scan(message):
             except: pass
         except Exception as e: bot.edit_message_text(f"Error: {e}"[:400],loading.chat.id,loading.message_id)
     elif goreng_mode:
-        loading=bot.reply_to(message,f"🔥 V40.11 REBOUND+GORENGAN Scanning {len(WATCHLIST_GORENGAN)} saham...")
+        loading=bot.reply_to(message,f"🔥 V40.12 REBOUND+GORENGAN Scanning {len(WATCHLIST_GORENGAN)} saham...")
         try:
             results_ara=[]
             results_rebound=[]
@@ -719,7 +735,7 @@ def handle_scan(message):
             results_rebound=sorted(results_rebound,key=lambda x: (x['score'], x['vol']),reverse=True)
             now = datetime.datetime.now(WIB)
             if results_ara or results_rebound:
-                txt=f"🔥 V40.11 GORENGAN REBOUND {now.strftime('%d %b %H:%M WIB')}\n"
+                txt=f"🔥 V40.12 GORENGAN REBOUND {now.strftime('%d %b %H:%M WIB')}\n"
                 if results_rebound:
                     txt+=f"\n💚 REBOUND POTENSI ({len(results_rebound)} saham) - DEFI dkk:\n"
                     for i,r in enumerate(results_rebound[:10],1):
@@ -761,7 +777,7 @@ def handle_scan(message):
 if __name__=="__main__":
     start_anti_tidur()
     start_auto()
-    print("Bot V40.11 BANDAR FIX FINAL - Anti Merah Kebalik running...")
+    print("Bot V40.12 BANDAR FIX FINAL - Anti Merah Kebalik running...")
     try:
         bot.remove_webhook()
         time.sleep(2)
