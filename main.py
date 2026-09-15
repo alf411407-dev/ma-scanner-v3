@@ -1,5 +1,5 @@
 """
-V40.1 GORENGAN LONGGAR - FIX DEFI
+V40.2 REBOUND ALL GORENGAN - FIX DEFI
 Perbaikan: Scan PAGI 09:00 RSI 48-58, bukan SORE 15:00 RSI 60
 Dari kode asli V39 yang ngasih tau sore udah bullish besok merah
 """
@@ -64,7 +64,7 @@ def load_last_dates():
 load_last_dates()
 
 WATCHLIST_BLUE = ["BBCA.JK","BBRI.JK","BMRI.JK","TLKM.JK","ASII.JK","BBNI.JK","UNVR.JK","ICBP.JK","INDF.JK","KLBF.JK","PGEO.JK","ACES.JK","ADRO.JK","ANTM.JK","ARTO.JK","BBTN.JK","BRIS.JK","CPIN.JK","EMTK.JK","EXCL.JK","HRUM.JK","INCO.JK","INDY.JK","INKP.JK","ITMG.JK","JPFA.JK","MDKA.JK","MEDC.JK","PGAS.JK","PTBA.JK","SMGR.JK","TINS.JK","TOWR.JK","UNTR.JK","PWON.JK","BSDE.JK","CTRA.JK","SMRA.JK","LPKR.JK","ELSA.JK","BRPT.JK","ESSA.JK","AKRA.JK","AMRT.JK","BBYB.JK","MEDS.JK","BREN.JK","CUAN.JK","AMMN.JK","MBMA.JK","NCKL.JK","PTRO.JK","RAJA.JK","BRMS.JK","DEWA.JK"]
-WATCHLIST_GORENGAN = ["DEFI.JK","INET.JK","BNBR.JK","BRMS.JK","DEWA.JK","BUVA.JK","COCO.JK","HATM.JK","BUMI.JK","ENRG.JK","BULL.JK","BRPT.JK","ESSA.JK","BIPI.JK","BIMA.JK","MBTO.JK","BGTG.JK","BWPT.JK","CBMF.JK","CMPP.JK","CRAB.JK","DOID.JK","FIRE.JK","KIJA.JK","HUMI.JK","IOTF.JK","KIOS.JK","KPIG.JK","LMAX.JK","MMLP.JK","MTEL.JK","NASI.JK","NICE.JK","PGEO.JK","PTRO.JK","SGER.JK","SMLE.JK","SRTG.JK","TPIA.JK","WIFI.JK","WOOL.JK","BEST.JK","MINA.JK","DOOH.JK","WIRG.JK","PYFA.JK","BELI.JK","COIN.JK","CITY.JK","SAGE.JK","IRSX.JK","FILM.JK","MDIA.JK","ZINC.JK","BATR.JK","CASH.JK","ENER.JK","PTMP.JK","MHKI.JK","LABA.JK","CBRE.JK","NANO.JK","TRGU.JK","VKTR.JK","GULA.JK","CBUT.JK","CHEM.JK","PTDU.JK","BBHI.JK","AGRO.JK","BBYB.JK","BANK.JK","BEBS.JK","BELL.JK","BOBA.JK","BOLA.JK","CAKK.JK","CUAN.JK","BREN.JK","DMMX.JK"]
+WATCHLIST_GORENGAN = ["BIRD.JK", "BUKA.JK", "GOTO.JK", "TRUE.JK", "NZIA.JK", "BEEF.JK", "DEFI.JK","INET.JK","BNBR.JK","BRMS.JK","DEWA.JK","BUVA.JK","COCO.JK","HATM.JK","BUMI.JK","ENRG.JK","BULL.JK","BRPT.JK","ESSA.JK","BIPI.JK","BIMA.JK","MBTO.JK","BGTG.JK","BWPT.JK","CBMF.JK","CMPP.JK","CRAB.JK","DOID.JK","FIRE.JK","KIJA.JK","HUMI.JK","IOTF.JK","KIOS.JK","KPIG.JK","LMAX.JK","MMLP.JK","MTEL.JK","NASI.JK","NICE.JK","PGEO.JK","PTRO.JK","SGER.JK","SMLE.JK","SRTG.JK","TPIA.JK","WIFI.JK","WOOL.JK","BEST.JK","MINA.JK","DOOH.JK","WIRG.JK","PYFA.JK","BELI.JK","COIN.JK","CITY.JK","SAGE.JK","IRSX.JK","FILM.JK","MDIA.JK","ZINC.JK","BATR.JK","CASH.JK","ENER.JK","PTMP.JK","MHKI.JK","LABA.JK","CBRE.JK","NANO.JK","TRGU.JK","VKTR.JK","GULA.JK","CBUT.JK","CHEM.JK","PTDU.JK","BBHI.JK","AGRO.JK","BBYB.JK","BANK.JK","BEBS.JK","BELL.JK","BOBA.JK","BOLA.JK","CAKK.JK","CUAN.JK","BREN.JK","DMMX.JK"]
 WATCHLIST = list(dict.fromkeys(WATCHLIST_BLUE + WATCHLIST_GORENGAN))
 
 app=Flask(__name__)
@@ -72,7 +72,7 @@ start_time=time.time()
 @app.route('/')
 def home():
     uptime=int(time.time()-start_time)
-    return f"Bot V40.1 GORENGAN LONGGAR - Anti Merah Kebalik - Uptime {uptime//3600}h"
+    return f"Bot V40.2 REBOUND ALL GORENGAN - Anti Merah Kebalik - Uptime {uptime//3600}h"
 @app.route('/health')
 def health(): return "OK V40.1",200
 @app.route('/ping')
@@ -395,6 +395,63 @@ def analyze_bawah(symbol, min_price=50, strict=True):
         return {'symbol':symbol.replace('.JK',''), 'close':curr_close, 'score':int(final_score), 'vol':vol_ratio, 'rsi':rsi, 'reasons':reasons, 'pump3': pump3, 'dist20': dist_ema20, 'trend': 'BULLISH AWAL'}
     except: return None
 
+
+def analyze_gorengan_rebound(symbol, min_price=20):
+    """V40.2 REBOUND - Gorengan potensi rebound dari bawah"""
+    try:
+        df,final_sym=get_data_realtime(symbol)
+        if df is None: return None
+        df_flat=flatten_df(df.copy()); close=pd.Series(df_flat['Close']).dropna()
+        if len(close)<30: return None
+        curr_close=float(close.iloc[-1])
+        if curr_close < min_price: return None
+        
+        ema5=float(calc_ema(close,5).iloc[-1]); ema10=float(calc_ema(close,10).iloc[-1]); ema20=float(calc_ema(close,20).iloc[-1])
+        ema5p=float(calc_ema(close,5).iloc[-2]); rsi=float(calc_rsi(close,14).iloc[-1])
+        
+        vol=df_flat['Volume'] if 'Volume' in df_flat.columns else pd.Series([0]*len(df_flat))
+        if isinstance(vol,pd.DataFrame): vol=vol.iloc[:,0]
+        vol_ma=float(pd.Series(vol).rolling(20).mean().iloc[-1]) if len(vol)>20 else 1
+        vol_now=float(vol.iloc[-1]) if len(vol)>0 else 0
+        vol_ratio=vol_now/vol_ma if vol_ma>0 else 0
+        
+        # Pump 3 hari
+        c3=float(close.iloc[-4]) if len(close)>=4 else curr_close
+        pump3=(curr_close-c3)/c3*100 if c3>0 else 0
+        
+        # Low 20 hari
+        low20=float(close.tail(20).min())
+        dist_low=(curr_close-low20)/low20*100 if low20>0 else 100
+        
+        # === FILTER REBOUND ===
+        # 1. Habis dibanting -5% sampai -25% dalam 3 hari
+        if not (-25 <= pump3 <= 2): return None
+        # 2. RSI oversold mau naik 30-55 (bukan 60+)
+        if not (28 <= rsi <= 55): return None
+        # 3. Vol mulai masuk >1.5x (akumulasi bandar)
+        if vol_ratio < 1.5: return None
+        if vol_ratio > 12: return None
+        # 4. Dekat bottom <8% dari low 20 hari
+        if dist_low > 12: return None
+        # 5. EMA5 mulai naik (ema5 > ema5 previous) = awal rebound
+        if ema5 < ema5p*0.995: return None
+        # 6. Harga masih di bawah EMA20 (masih murah, belum terbang)
+        if curr_close > ema20*1.05: return None
+        
+        # Scoring rebound
+        score=70
+        if -10 <= pump3 <= 0: score+=10  # pas di bawah
+        if 35 <= rsi <= 48: score+=10  # RSI sweet spot rebound
+        if 1.8 <= vol_ratio <= 4: score+=8
+        if dist_low < 5: score+=7  # mepet bottom banget
+        if ema5 > ema5p: score+=5
+        
+        if score>100: score=100
+        return {'symbol':symbol.replace('.JK',''), 'close':curr_close, 'score':int(score), 'vol':vol_ratio, 'rsi':rsi, 'pump3':pump3, 'dist_low':dist_low, 'trend':'REBOUND', 'low20':low20}
+    except Exception as e:
+        return None
+
+
 def analyze_bearish(symbol, min_price=50):
     try:
         df,final_sym=get_data_realtime(symbol)
@@ -564,22 +621,32 @@ def handle_scan(message):
             except: pass
         except Exception as e: bot.edit_message_text(f"Error: {e}"[:400],loading.chat.id,loading.message_id)
     elif goreng_mode:
-        loading=bot.reply_to(message,f"🔥 V40 GORENGAN Scanning {len(WATCHLIST_GORENGAN)} saham...")
+        loading=bot.reply_to(message,f"🔥 V40.2 REBOUND+GORENGAN Scanning {len(WATCHLIST_GORENGAN)} saham...")
         try:
-            results=[]
+            results_ara=[]
+            results_rebound=[]
             for sym in WATCHLIST_GORENGAN:
-                r=analyze_gorengan_pasti(sym, min_price=min_price)
-                if r: results.append(r)
-            results=sorted(results,key=lambda x: (x['score'], x['pump3'], x['vol']),reverse=True)
-            for idx in range(min(3, len(results))): results[idx]['score']=100
-            if results:
-                now = datetime.datetime.now(WIB)
-                txt=f"🔥 V40 GORENGAN + TREND! {now.strftime('%d %b %H:%M WIB')}\nDari {len(results)} -> TOP5\n\n"
-                for i,r in enumerate(results[:5],1):
-                    txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% Pump {r['pump3']:.0f}% Vol {r['vol']:.1f}x RSI {r['rsi']:.0f}\n   /goreng {r['symbol'].lower()}.jk\n\n"
-                txt+="⚠️ TP CEPET +7% +12%!"
+                r1=analyze_gorengan_pasti(sym, min_price=min_price)
+                if r1: results_ara.append(r1)
+                r2=analyze_gorengan_rebound(sym, min_price=min_price)
+                if r2: results_rebound.append(r2)
+            results_ara=sorted(results_ara,key=lambda x: (x['score'], x['pump3'], x['vol']),reverse=True)
+            results_rebound=sorted(results_rebound,key=lambda x: (x['score'], x['vol']),reverse=True)
+            
+            now = datetime.datetime.now(WIB)
+            if results_ara or results_rebound:
+                txt=f"🔥 V40.2 GORENGAN REBOUND {now.strftime('%d %b %H:%M WIB')}\n"
+                if results_rebound:
+                    txt+=f"\n💚 REBOUND POTENSI ({len(results_rebound)} saham) - DEFI dkk:\n"
+                    for i,r in enumerate(results_rebound[:5],1):
+                        txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% RSI {r['rsi']:.0f} Vol {r['vol']:.1f}x Pump {r['pump3']:.1f}% Low+{r['dist_low']:.1f}%\n   /goreng {r['symbol'].lower()}.jk\n"
+                if results_ara:
+                    txt+=f"\n🚀 ARA LANJUT ({len(results_ara)} saham):\n"
+                    for i,r in enumerate(results_ara[:3],1):
+                        txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% Pump {r['pump3']:.0f}% Vol {r['vol']:.1f}x RSI {r['rsi']:.0f}\n   /goreng {r['symbol'].lower()}.jk\n"
+                txt+="\n✅ REBOUND = Beli bawah, TP +7% +12% | ARA = Ikut trend"
             else:
-                txt=f"Gak ada GORENGAN - V40 ketat! Pucuk DOOH MBTO ke-filter!"
+                txt=f"Gak ada GORENGAN REBOUND - Pasar sepi!"
             bot.reply_to(message,txt)
             try: bot.delete_message(loading.chat.id,loading.message_id)
             except: pass
@@ -610,7 +677,7 @@ def handle_scan(message):
 if __name__=="__main__":
     start_anti_tidur()
     start_auto()
-    print("Bot V40.1 GORENGAN LONGGAR - Anti Merah Kebalik running...")
+    print("Bot V40.2 REBOUND ALL GORENGAN - Anti Merah Kebalik running...")
     try:
         bot.remove_webhook()
         time.sleep(2)
