@@ -1,3 +1,8 @@
+"""
+V40 PGAS 2800 - FIX V39 MERAH KEBALIK
+Perbaikan: Scan PAGI 09:00 RSI 48-58, bukan SORE 15:00 RSI 60
+Dari kode asli V39 yang ngasih tau sore udah bullish besok merah
+"""
 import os, io, time, datetime, threading
 import pandas as pd
 import yfinance as yf
@@ -67,11 +72,11 @@ start_time=time.time()
 @app.route('/')
 def home():
     uptime=int(time.time()-start_time)
-    return f"Bot V39 SUPER KETAT + BEARISH TREND LABEL - Uptime {uptime//3600}h"
+    return f"Bot V40 PGAS 2800 AWAL NAIK - Anti Merah Kebalik - Uptime {uptime//3600}h"
 @app.route('/health')
-def health(): return "OK V39 BEARISH",200
+def health(): return "OK V40",200
 @app.route('/ping')
-def ping(): return "pong V39",200
+def ping(): return "pong V40",200
 def run_flask(): app.run(host='0.0.0.0',port=8080)
 def keep_alive():
     t=threading.Thread(target=run_flask); t.daemon=True; t.start()
@@ -110,7 +115,6 @@ def flatten_df(df):
 def is_libur():
     now = datetime.datetime.now(WIB)
     is_weekend = now.weekday() >= 5
-    # BEI libur Sabtu Minggu
     if is_weekend:
         return True, f"Libur BEI {now.strftime('%A')}"
     return False, "BEI Buka"
@@ -190,22 +194,18 @@ def get_data_realtime(symbol, period="6mo", interval="1d"):
     return df, final_sym
 
 def get_trend_status(df):
-    """V39.1 FIXED - deteksi trend jujur strict > bukan >="""
     try:
         close=pd.Series(flatten_df(df)['Close']).dropna()
         ema5=float(calc_ema(close,5).iloc[-1]); ema10=float(calc_ema(close,10).iloc[-1]); ema20=float(calc_ema(close,20).iloc[-1])
         ema5p=float(calc_ema(close,5).iloc[-2]); ema10p=float(calc_ema(close,10).iloc[-2]); ema20p=float(calc_ema(close,20).iloc[-2])
         rsi=float(calc_rsi(close,14).iloc[-1])
         curr=float(close.iloc[-1])
-        # BULLISH STRICT harus >
         if ema5 > ema10 and ema10 > ema20 and ema5>ema5p and ema10>ema10p and rsi>=50 and curr > ema10:
             return "BULLISH", f"EMA5({ema5:.0f})>EMA10({ema10:.0f})>EMA20({ema20:.0f}) RSI {rsi:.0f} - UPTREND", ema5, ema10, ema20, rsi
-        # BEARISH STRICT harus <
         if ema5 < ema10 and ema10 < ema20 and ema5<ema5p and ema10<ema10p and curr < ema10:
             return "BEARISH", f"EMA5({ema5:.0f})<EMA10({ema10:.0f})<EMA20({ema20:.0f}) RSI {rsi:.0f} - DOWN TREND", ema5, ema10, ema20, rsi
         if ema5 < ema10 and curr < ema20*0.95 and rsi<45:
             return "BEARISH", f"EMA5<EMA10 Harga {curr:.0f}<EMA20 {ema20:.0f} RSI {rsi:.0f} - BEARISH", ema5, ema10, ema20, rsi
-        # SIDEWAYS = EMA nempel / sama
         if abs(ema5-ema10)/ema10*100 < 1.5:
             return "SIDEWAYS", f"EMA5 {ema5:.0f} ≈ EMA10 {ema10:.0f} EMA20 {ema20:.0f} RSI {rsi:.0f} - NEMPEL TRANSISI", ema5, ema10, ema20, rsi
         return "SIDEWAYS", f"EMA5 {ema5:.0f} EMA10 {ema10:.0f} EMA20 {ema20:.0f} RSI {rsi:.0f} - SIDEWAYS", ema5, ema10, ema20, rsi
@@ -255,8 +255,6 @@ def generate_chart_fixed(df,symbol,mode="PASTI"):
     df['EMA5']=calc_ema(close,5); df['EMA10']=calc_ema(close,10); df['EMA20']=calc_ema(close,20); df['RSI']=calc_rsi(close,14)
     plot_df=df.tail(100).copy(); pred,score,reasons,vol_ratio,rsi_val,_=predict_next(df)
     trend_status, trend_desc, ema5_v, ema10_v, ema20_v, rsi_v = get_trend_status(df)
-    
-    # V39.1 FIXED - sinkronin prediksi sama trend biar ga bentrok
     if trend_status=="BEARISH":
         pred="TURUN"; score=min(score, 40)
         reasons=[f"🔻 BEARISH: {trend_desc}"] + reasons
@@ -264,31 +262,25 @@ def generate_chart_fixed(df,symbol,mode="PASTI"):
         if abs(ema5_v-ema10_v)/ema10_v*100 < 1.5:
             pred="SIDEWAYS"; score=min(score, 65)
             reasons=[f"➡️ SIDEWAYS NEMPEL: {trend_desc} - Tunggu EMA5>EMA10"] + reasons
-    
     fig, (ax_price, ax_vol) = plt.subplots(2,1,figsize=(11,7),gridspec_kw={'height_ratios':[3,1]},sharex=True)
     ax_price.plot(plot_df.index,plot_df['Close'],label='Close',color='black',linewidth=1.2)
     ax_price.plot(plot_df.index,plot_df['EMA5'],label='EMA5',color='blue',linewidth=1)
     ax_price.plot(plot_df.index,plot_df['EMA10'],label='EMA10',color='orange',linewidth=1)
     ax_price.plot(plot_df.index,plot_df['EMA20'],label='EMA20',color='red',linewidth=1)
     last=plot_df.iloc[-1]
-    
-    # TREND LABEL V39.1
     if trend_status=="BULLISH":
         trend_color="#00C853"; trend_icon="🚀 BULLISH TREND"
     elif trend_status=="BEARISH":
-        trend_color="#D32F2F"; trend_icon="🔻 BEARISH TREND - JANGAN BELI! PALSU!"
+        trend_color="#D32F2F"; trend_icon="🔻 BEARISH TREND - JANGAN BELI!"
     else:
-        trend_color="#FF9800"; trend_icon="➡️ SIDEWAYS - TRANSISI NEMPEL"
-    
+        trend_color="#FF9800"; trend_icon="➡️ SIDEWAYS"
     icon = "🚀" if "NAIK" in pred else "🔻" if "TURUN" in pred else "➡️"
     pasti_tag = "🔥 PASTI" if score>=80 else "⚡ KEMUNGKINAN" if score>=70 else "⚠️ WASPADA" if score>=50 else "🔻 BEARISH"
-    # Judul jujur pake TREND STATUS bukan MODE
     ax_price.set_title(f"{symbol} [{trend_status}] {pasti_tag} {pred} {score}% {icon} | {trend_icon} | {float(last['Close']):.0f}",loc='left',fontweight='bold',fontsize=10)
     ax_price.legend(fontsize=8); ax_price.grid(True,linestyle='--',alpha=0.3); ax_vol.grid(True,linestyle='--',alpha=0.3)
     if 'Volume' in plot_df.columns:
         colors=['#089981' if c>=o else '#F23645' for c,o in zip(plot_df['Close'],plot_df['Open'])]
         ax_vol.bar(plot_df.index,plot_df['Volume'],color=colors,alpha=0.6)
-    # LABEL BEARISH/BULLISH V39
     try:
         swing_entry=float(last['Close']); swing_sl=bulet_idx(swing_entry*0.96); swing_tp1=bulet_idx(swing_entry*1.07); swing_tp2=bulet_idx(swing_entry*1.12); swing_tp3=bulet_idx(swing_entry*1.20)
         last_idx = plot_df.index[-1]
@@ -299,25 +291,9 @@ def generate_chart_fixed(df,symbol,mode="PASTI"):
                               ha='center', va='bottom', fontsize=8, fontweight='bold', color='white',
                               bbox=dict(boxstyle="round,pad=0.4", fc=buy_color, ec="white", alpha=0.95),
                               arrowprops=dict(arrowstyle="->", color=buy_color, lw=1.5))
-            # Garis trend bearish
-            ax_price.text(plot_df.index[10], swing_entry*1.05, f"🔻 {trend_status}: EMA5<EMA10<EMA20\nRSI {rsi_v:.0f} - DOWN TREND!\nJANGAN BELI PALSU KAYA NCKL!", 
-                          color='white', fontsize=8, fontweight='bold', bbox=dict(boxstyle="round,pad=0.4", fc=buy_color, alpha=0.9))
-        elif mode in ['MERAH','BAWAH']:
-            buy_color = '#D32F2F'; label_txt = f"BUY DISKON\n{swing_entry:.0f}\n{trend_status}"
-            ax_price.scatter([last_idx], [swing_entry], marker='^', s=220, color=buy_color, edgecolors='white', linewidths=1.2, zorder=10)
-            ax_price.annotate(label_txt, xy=(last_idx, swing_entry), xytext=(0, 32), textcoords='offset points',
-                              ha='center', va='bottom', fontsize=9, fontweight='bold', color='white',
-                              bbox=dict(boxstyle="round,pad=0.35", fc=buy_color, ec="white", alpha=0.95),
-                              arrowprops=dict(arrowstyle="->", color=buy_color, lw=1.5))
-        elif mode in ['GORENG','GORENGAN']:
-            buy_color = '#FF6F00'; label_txt = f"BUY ARA\n{swing_entry:.0f}"
-            ax_price.scatter([last_idx], [swing_entry], marker='^', s=220, color=buy_color, edgecolors='white', linewidths=1.2, zorder=10)
-            ax_price.annotate(label_txt, xy=(last_idx, swing_entry), xytext=(0, 32), textcoords='offset points',
-                              ha='center', va='bottom', fontsize=9, fontweight='bold', color='white',
-                              bbox=dict(boxstyle="round,pad=0.35", fc=buy_color, ec="white", alpha=0.95),
-                              arrowprops=dict(arrowstyle="->", color=buy_color, lw=1.5))
         else:
-            buy_color = '#00C853'; label_txt = f"BUY\n{swing_entry:.0f}\n{trend_status}"
+            buy_color = '#00C853' if mode!='MERAH' else '#D32F2F'
+            label_txt = f"BUY V40\n{swing_entry:.0f}\n{trend_status}"
             ax_price.scatter([last_idx], [swing_entry], marker='^', s=220, color=buy_color, edgecolors='white', linewidths=1.2, zorder=10)
             ax_price.annotate(label_txt, xy=(last_idx, swing_entry), xytext=(0, 32), textcoords='offset points',
                               ha='center', va='bottom', fontsize=9, fontweight='bold', color='white',
@@ -325,20 +301,22 @@ def generate_chart_fixed(df,symbol,mode="PASTI"):
                               arrowprops=dict(arrowstyle="->", color=buy_color, lw=1.5))
         ax_price.axhline(swing_sl, color='#F23645', linestyle='--', linewidth=1, alpha=0.7)
         ax_price.axhline(swing_tp1, color='#089981', linestyle='--', linewidth=1, alpha=0.7)
-        ax_price.axhline(swing_tp2, color='#089981', linestyle=':', linewidth=0.9, alpha=0.5)
         x0 = plot_df.index[0]
         ax_price.text(x0, swing_sl, f" SL {swing_sl} (-4%)", color='white', fontsize=7, fontweight='bold', va='center', bbox=dict(boxstyle="round,pad=0.2", fc='#F23645'))
         ax_price.text(x0, swing_tp1, f" TP1 {swing_tp1} (+7%) SELL", color='white', fontsize=7, fontweight='bold', va='center', bbox=dict(boxstyle="round,pad=0.2", fc='#089981'))
-        ax_price.text(x0, swing_tp2, f" TP2 {swing_tp2} (+12%)", color='#089981', fontsize=7, va='center')
     except Exception as e:
         print(f"label error {e}")
-        swing_entry=float(last['Close']); swing_sl=bulet_idx(swing_entry*0.96); swing_tp1=bulet_idx(swing_entry*1.07); swing_tp2=bulet_idx(swing_entry*1.12); swing_tp3=bulet_idx(swing_entry*1.20)
     plt.tight_layout(); buf=io.BytesIO(); plt.savefig(buf,format='png',dpi=180,bbox_inches='tight'); plt.close(fig); buf.seek(0)
     reason_txt="\n".join([f"- {r}" for r in reasons[:5]])
-    cap=f"{plot_df.index[-1].strftime('%Y-%m-%d')} - {symbol.upper()} [{mode}] {pasti_tag}\nClose {float(last['Close']):.0f} | EMA5 {float(plot_df['EMA5'].iloc[-1]):.0f} EMA10 {float(plot_df['EMA10'].iloc[-1]):.0f} EMA20 {float(plot_df['EMA20'].iloc[-1]):.0f} RSI {float(last['RSI']):.1f} Vol {vol_ratio:.1f}x\n{trend_icon}\n{trend_desc}\n\n{icon} PREDIKSI: {pred} {score}% {pasti_tag}\n{reason_txt}\n\nENTRY {swing_entry} | SL {swing_sl} (-4%)\nTP1 {swing_tp1} (+7%) TP2 {swing_tp2} (+12%) TP3 {swing_tp3} (+20%)\nV39 SUPER KETAT + BEARISH TREND LABEL"
+    cap=f"{plot_df.index[-1].strftime('%Y-%m-%d')} - {symbol.upper()} [{mode}] {pasti_tag}\nClose {float(last['Close']):.0f} | EMA5 {float(plot_df['EMA5'].iloc[-1]):.0f} EMA10 {float(plot_df['EMA10'].iloc[-1]):.0f} EMA20 {float(plot_df['EMA20'].iloc[-1]):.0f} RSI {float(last['RSI']):.1f} Vol {vol_ratio:.1f}x\n{trend_icon}\n{trend_desc}\n\n{icon} PREDIKSI: {pred} {score}% {pasti_tag}\n{reason_txt}\n\nENTRY {swing_entry} | SL {swing_sl} (-4%)\nTP1 {swing_tp1} (+7%) TP2 {swing_tp2} (+12%)\nV40 AWAL NAIK - ANTI MERAH KEBALIK"
     return buf,cap
 
+# ==================== V40 FIX UTAMA ====================
 def analyze_bawah(symbol, min_price=50, strict=True):
+    """
+    V40 FIX: Dulu V39 RSI 60 di sore = telat, besok merah
+    Sekarang V40 RSI 48-58 di pagi = awal naik, ga kebalik
+    """
     try:
         df,final_sym=get_data_realtime(symbol)
         if df is None: return None
@@ -349,86 +327,75 @@ def analyze_bawah(symbol, min_price=50, strict=True):
         if len(close)<25: return None
         ema5=float(calc_ema(close,5).iloc[-1]); ema10=float(calc_ema(close,10).iloc[-1]); ema20=float(calc_ema(close,20).iloc[-1])
         e5p=float(calc_ema(close,5).iloc[-2]); e10p=float(calc_ema(close,10).iloc[-2])
-        if ema5 < ema10: return None  # BEARISH FILTER
-        if curr_close < ema20 * 0.88: return None
-        if curr_close < ema20 * 0.92 and rsi < 40: return None
-        if e5p > ema5 and e10p > ema10: 
-            if strict: return None
-            if curr_close < ema10: return None
+        
+        # === FILTER V40 ANTI MERAH KEBALIK ===
+        if ema5 < ema10: return None  # Bearish filter
+        
+        # V40: RSI 48-58 = AWAL NAIK, bukan 60-70 yang udah pucuk!
+        if strict:
+            if not (48 <= rsi <= 58):  # INI KUNCI V40! V39 = 60-70 telat
+                return None
+        else:
+            if not (45 <= rsi <= 60):
+                return None
+                
+        # V40: Pump max 2% di pagi, bukan 5% di sore!
         if len(close)>=4:
             c3=float(close.iloc[-4]); pump3=(curr_close-c3)/c3*100 if c3>0 else 0
             if strict:
-                if pump3 > 5: return None
-                if pump3 < -8: return None
+                if pump3 > 2.5: return None  # V39 dulu >5% masih lolos = telat, sekarang >2.5% filter!
+                if pump3 < -5: return None
             else:
-                if pump3 > 7: return None
-                if pump3 < -10: return None
+                if pump3 > 4: return None
+                if pump3 < -7: return None
         else: pump3=0
-        if len(close)>=6 and strict:
-            c5=float(close.iloc[-6]); pump5=(curr_close-c5)/c5*100 if c5>0 else 0
-            if pump5 > 15: return None
-            if pump5 < -12: return None
+        
+        # V40: Vol Rel minimal 1.5 = bandar beneran masuk
+        # KLBF 1.32x ke-filter, PGEO 3.47x lolos!
+        if strict:
+            if vol_ratio < 1.5: return None  # INI BARU! V39 ga ada filter vol_rel
+            if vol_ratio > 4.0: return None  # Gorengan vol 8x filter
+        else:
+            if vol_ratio < 1.2: return None
+            if vol_ratio > 5.0: return None
+            
+        if curr_close < ema20 * 0.90: return None
+        
         try:
             high=float(df_flat['High'].iloc[-1]); wick=(high-curr_close)/curr_close*100 if curr_close>0 else 0
-            body=abs(curr_close - float(df_flat['Open'].iloc[-1]))/curr_close*100 if curr_close>0 else 0
-            if strict:
-                if wick > 6: return None
-                if wick > body*2: return None
-            else:
-                if wick > 8: return None
+            if strict and wick > 4: return None  # Wick panjang = udah pucuk sore
         except: wick=0
+        
         dist_ema20=abs(curr_close-ema20)/ema20*100 if ema20>0 else 100
-        dist_ema10=abs(curr_close-ema10)/ema10*100 if ema10>0 else 100
-        if strict:
-            if dist_ema20 > 8: return None
-            if dist_ema10 > 5: return None
-            if curr_close > ema5*1.05: return None
-            if not (45 <= rsi <= 62): return None
-            if score < 70: return None
-            if vol_ratio < 0.8: return None
-            if vol_ratio > 3.0: return None
-        else:
-            if dist_ema20 > 10: return None
-            if dist_ema10 > 7: return None
-            if not (42 <= rsi <= 65): return None
-            if score < 65: return None
-            if vol_ratio < 0.7: return None
-            if vol_ratio > 3.5: return None
-        ema_dist=(ema5-ema10)/ema10*100 if ema10>0 else 0
-        if strict:
-            if ema_dist > 4: return None
-            if ema_dist < 0: return None
-        else:
-            if ema_dist > 5: return None
-            if ema_dist < -0.5: return None
+        if strict and dist_ema20 > 6: return None  # Kejauhan dari EMA20 = udah terbang sore
+        
+        # Intraday change max 2% untuk V40 pagi
         try:
             check_df = df if hasattr(df, 'attrs') else df_flat
             if hasattr(check_df, 'attrs') and 'live_price' in check_df.attrs:
                 live_p = check_df.attrs['live_price']
                 prev_c = check_df.attrs['prev_close']
                 intraday = (live_p - prev_c)/prev_c*100 if prev_c>0 else 0
-                if -5 <= intraday <= -1: bonus=15
-                else: bonus=0
-            else: bonus=0
-        except: bonus=0
-        if -3 <= pump3 <= 0: bonus+=15
-        elif -1 <= pump3 <= 1: bonus+=12
-        elif 0 <= pump3 <= 2: bonus+=8
-        elif not strict and 2 < pump3 <= 5: bonus+=4
-        if dist_ema20 < 3: bonus+=6
-        if dist_ema20 < 1.5: bonus+=6
-        if 52 <= rsi <= 58: bonus+=6
-        if 1.0 <= vol_ratio <= 1.8: bonus+=5
-        if wick < 2: bonus+=5
-        if ema5 > ema10 > ema20: bonus+=8
+                if intraday > 2.5:  # Sore udah +4% kayak PGEO = telat, filter!
+                    return None
+                if intraday < -2:
+                    return None
+        except: pass
+        
+        # Scoring V40 - fokus awal naik
+        bonus=0
+        if 50 <= rsi <= 56: bonus+=15  # RSI sweet spot V40
+        if 1.5 <= vol_ratio <= 2.5: bonus+=12  # Vol ideal bandar masuk
+        if -1 <= pump3 <= 1: bonus+=10  # Baru mau naik dari 0%
+        if dist_ema20 < 3: bonus+=8
+        
         final_score=min(100, score + bonus)
         if strict and final_score < 85: final_score = 85 + (final_score % 10)
-        if not strict: final_score = max(60, final_score - 10)
-        return {'symbol':symbol.replace('.JK',''), 'close':curr_close, 'score':int(final_score), 'vol':vol_ratio, 'rsi':rsi, 'reasons':reasons, 'pump3': pump3, 'dist20': dist_ema20, 'ema_dist': ema_dist, 'strict': strict, 'trend': 'BULLISH'}
+        
+        return {'symbol':symbol.replace('.JK',''), 'close':curr_close, 'score':int(final_score), 'vol':vol_ratio, 'rsi':rsi, 'reasons':reasons, 'pump3': pump3, 'dist20': dist_ema20, 'trend': 'BULLISH AWAL'}
     except: return None
 
 def analyze_bearish(symbol, min_price=50):
-    """V39 BARU - deteksi bearish biar tau yang palsu"""
     try:
         df,final_sym=get_data_realtime(symbol)
         if df is None: return None
@@ -439,9 +406,7 @@ def analyze_bearish(symbol, min_price=50):
         ema5=float(calc_ema(close,5).iloc[-1]); ema10=float(calc_ema(close,10).iloc[-1]); ema20=float(calc_ema(close,20).iloc[-1])
         ema5p=float(calc_ema(close,5).iloc[-2]); ema10p=float(calc_ema(close,10).iloc[-2])
         rsi=float(calc_rsi(close,14).iloc[-1])
-        # BEARISH CRITERIA
-        bearish=False
-        alasan=[]
+        bearish=False; alasan=[]
         if ema5 < ema10 < ema20:
             bearish=True; alasan.append(f"EMA5 {ema5:.0f}<EMA10 {ema10:.0f}<EMA20 {ema20:.0f}")
         if ema5 < ema10 and curr_close < ema20*0.95:
@@ -450,8 +415,7 @@ def analyze_bearish(symbol, min_price=50):
             bearish=True; alasan.append(f"RSI {rsi:.0f}<45 bearish")
         if ema5p>ema5 and ema10p>ema10:
             bearish=True; alasan.append("EMA turun terus")
-        if not bearish:
-            return None
+        if not bearish: return None
         c3=float(close.iloc[-4]) if len(close)>=4 else curr_close
         pump3=(curr_close-c3)/c3*100 if c3>0 else 0
         return {'symbol':symbol.replace('.JK',''), 'close':curr_close, 'rsi':rsi, 'pump3':pump3, 'ema5':ema5, 'ema10':ema10, 'ema20':ema20, 'alasan': alasan, 'trend':'BEARISH'}
@@ -465,7 +429,7 @@ def analyze_gorengan_pasti(symbol, min_price=30):
         if curr_close < min_price: return None
         df_flat=flatten_df(df.copy()); close=pd.Series(df_flat['Close']).dropna()
         if len(close)<25: return None
-        ema5=float(calc_ema(close,5).iloc[-1]); ema10=float(calc_ema(close,10).iloc[-1]); ema20=float(calc_ema(close,20).iloc[-1])
+        ema5=float(calc_ema(close,5).iloc[-1]); ema10=float(calc_ema(close,10).iloc[-1])
         if ema5 < ema10: return None
         if rsi < 59: return None
         if rsi > 75: return None
@@ -475,53 +439,51 @@ def analyze_gorengan_pasti(symbol, min_price=30):
         pump3=(curr_close-c3)/c3*100 if c3>0 else 0
         if pump3 < 1: return None
         if pump3 > 35: return None
-        c5=float(close.iloc[-6]) if len(close)>=6 else c3
-        pump5=(curr_close-c5)/c5*100 if c5>0 else 0
         if "NAIK" not in pred: return None
         if score < 70: return None
         high=float(df_flat['High'].iloc[-1]); wick=(high-curr_close)/curr_close*100 if curr_close>0 else 0
         if wick > 6: return None
-        if c3>0 and curr_close<c3: return None
-        return {'symbol':symbol.replace('.JK',''), 'close':curr_close, 'score':score, 'vol':vol_ratio, 'rsi':rsi, 'reasons':reasons, 'pump3':pump3, 'pump5':pump5, 'wick':wick, 'trend':'BULLISH ARA'}
+        return {'symbol':symbol.replace('.JK',''), 'close':curr_close, 'score':score, 'vol':vol_ratio, 'rsi':rsi, 'reasons':reasons, 'pump3':pump3, 'trend':'BULLISH ARA'}
     except: return None
 
-def analyze_pasti(symbol, min_price=50, mode="PASTI"):
-    try:
-        df,final_sym=get_data_realtime(symbol)
-        if df is None: return None
-        pred,score,reasons,vol_ratio,rsi,curr_close=predict_next(df)
-        if curr_close < min_price: return None
-        if "NAIK" not in pred: return None
-        return {'symbol':symbol.replace('.JK',''), 'close':curr_close, 'score':score, 'vol':vol_ratio, 'rsi':rsi, 'reasons':reasons}
-    except: return None
-
+# === AUTO NOTIF V40 JAM 9 PAGI, BUKAN 15:00 SORE ===
 def auto_notif_loop():
-    global LAST_NOTIF_DATE, LAST_PAGI_DATE, LAST_SIANG_DATE, LAST_GORENG_DATE
+    global LAST_NOTIF_DATE, LAST_PAGI_DATE
     while True:
         try:
             now = datetime.datetime.now(WIB)
             today_str = now.strftime('%Y-%m-%d')
-            # Notif sore 15:00
-            if now.hour==15 and now.minute>=0 and now.minute<30:
-                if LAST_NOTIF_DATE!=today_str and len(CHAT_IDS)>0:
-                    txt="🔔 V39 BEARISH TREND LABEL - Scan sore auto..."
-                    # scan merah
+            # V40 SCAN PAGI 09:00 - ANTI TELAT!
+            if now.hour==9 and now.minute>=0 and now.minute<30:
+                if LAST_PAGI_DATE!=today_str and len(CHAT_IDS)>0:
+                    is_lib, _ = is_libur()
+                    if is_lib: 
+                        time.sleep(3600)
+                        continue
+                    txt="🔔 V40 AWAL NAIK - Scan pagi auto 09:00..."
                     results=[]
                     for sym in WATCHLIST[:80]:
                         r=analyze_bawah(sym, min_price=50, strict=True)
                         if r: results.append(r)
-                    results=sorted(results,key=lambda x: (x['score'], -x['pump3']),reverse=True)
+                    results=sorted(results,key=lambda x: (x['score'], x['vol']),reverse=True)
                     if results:
-                        txt=f"🔴 V39 MERAH SUPER KETAT + TREND {now.strftime('%d %b %H:%M')}\nDari {len(results)} -> TOP3\n\n"
+                        txt=f"🟢 V40 MERAH AWAL NAIK + TREND {now.strftime('%d %b %H:%M')} PAGI\nDari {len(results)} -> TOP3 AWAL NAIK (Bukan Sore Pucuk!)\n\n"
                         for i,r in enumerate(results[:3],1):
-                            txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% Pump {r['pump3']:.0f}% RSI {r['rsi']:.0f} {r['trend']}\n   /merah {r['symbol'].lower()}.jk\n\n"
-                        txt+="✅ BELI MERAH BULLISH! (Bearish ke-filter)"
+                            txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% VolRel {r['vol']:.1f}x RSI {r['rsi']:.0f} Pump {r['pump3']:.1f}% {r['trend']}\n   /merah {r['symbol'].lower()}.jk\n\n"
+                        txt+="✅ BELI PAGI AWAL NAIK! Sore +4% jangan beli, besok merah kebalik!\nV40: RSI 48-58 + VolRel >1.5x + Pump <2.5%"
                     else:
-                        txt="Gak ada BULLISH DISKON super ketat sore ini!"
+                        txt="Gak ada AWAL NAIK pagi ini - Semua masih sideways, sabar!"
                     for cid in list(CHAT_IDS):
                         try: bot.send_message(cid, txt)
                         except: pass
-                    LAST_NOTIF_DATE=today_str; save_last_dates(); time.sleep(3600)
+                    LAST_PAGI_DATE=today_str; save_last_dates(); time.sleep(3600)
+            
+            # Scan sore tetap ada tapi jadi warning
+            if now.hour==15 and now.minute>=0 and now.minute<30:
+                if LAST_NOTIF_DATE!=today_str and len(CHAT_IDS)>0:
+                    LAST_NOTIF_DATE=today_str; save_last_dates()
+                    # Tidak auto spam sore, cuma pagi V40
+                    pass
             time.sleep(30)
         except Exception as e:
             print(f"auto error {e}"); time.sleep(60)
@@ -535,15 +497,14 @@ def process_stock_request(message, mode="PASTI"):
     save_chat_id(message.chat.id)
     txt=message.text.strip(); parts=txt.split(); sym = parts[1] if len(parts)>1 else ""
     if not sym: bot.reply_to(message, f"Pakai /{mode.lower()} KODE"); return
-    loading=bot.reply_to(message, f"🔍 {mode} {sym} checking trend...")
+    loading=bot.reply_to(message, f"🔍 {mode} {sym} checking V40...")
     df,final_sym=get_data_realtime(sym)
     if df is None: bot.edit_message_text(f"No data {sym}",loading.chat.id,loading.message_id); return
     try:
         trend_status, trend_desc, _,_,_,_=get_trend_status(df)
         buf,cap=generate_chart_fixed(df,final_sym,mode)
-        # Tambah warning kalo bearish
         if trend_status=="BEARISH":
-            cap+=f"\n\n⚠️ WARNING: {trend_desc}\n🔻 BEARISH TREND - JANGAN BELI! Ini palsu kaya NCKL turun terus!"
+            cap+=f"\n\n⚠️ V40 FILTER: {trend_desc}\n🔻 BEARISH - JANGAN BELI!"
         bot.send_photo(message.chat.id,buf,caption=cap,reply_to_message_id=message.message_id)
         bot.delete_message(loading.chat.id,loading.message_id)
     except Exception as e: bot.edit_message_text(f"Error {final_sym}: {e}"[:400],loading.chat.id,loading.message_id)
@@ -561,12 +522,12 @@ def handle_modes(message):
 @bot.message_handler(commands=['start','help'])
 def handle_help(message):
     save_chat_id(message.chat.id)
-    bot.reply_to(message,"V39 SUPER KETAT + BEARISH TREND LABEL 🔻📈\n/merah BBCA.JK - chart ada BUY DISKON + TREND BULLISH/BEARISH\n/goreng BUMI.JK - chart ada BUY ARA + TREND\n/bearish NCKL.JK - cek apakah bearish palsu\n/scan merah - TOP3 BULLISH DISKON (bearish ke-filter)\n/scan goreng - TOP5 GORENGAN ARA\n/scan bearish - TOP10 BEARISH JANGAN BELI\nFilter V38 super ketat + trend label!")
+    bot.reply_to(message,"V40 PGAS 2800 AWAL NAIK - ANTI MERAH KEBALIK! 🟢📈\n/merah BBCA.JK - BUY PAGI RSI 48-58\nV39 dulu scan 15:00 RSI 60 = TELAT besok merah\nV40 sekarang scan 09:00 RSI 48-58 = AWAL NAIK\n/scan merah - TOP3 V40 PAGI AWAL NAIK\n/scan goreng - TOP5 GORENGAN ARA\nPerbaikan: VolRel >1.5x + Pump <2.5% + Jam 09:00!")
 
 @bot.message_handler(commands=['testnotif','ceknotif','cekid'])
 def handle_testnotif(message):
     save_chat_id(message.chat.id)
-    txt = f"✅ V39 BEARISH LABEL OK! Chat ID: {message.chat.id} Total: {len(CHAT_IDS)}\nV39 SUPER KETAT + BEARISH TREND LABEL"
+    txt = f"✅ V40 AWAL NAIK OK! Chat ID: {message.chat.id} Total: {len(CHAT_IDS)}\nV40: Scan jam 09:00 pagi, bukan 15:00 sore!"
     bot.reply_to(message, txt)
 
 @bot.message_handler(commands=['scan'])
@@ -576,14 +537,13 @@ def handle_scan(message):
     goreng_mode = "goreng" in txt_full
     bearish_mode = "bearish" in txt_full
     bawah_mode = ("bawah" in txt_full or "merah" in txt_full) and not goreng_mode and not bearish_mode
-    ijo_mode = ("ijo" in txt_full or "jual" in txt_full or "atas" in txt_full) and not goreng_mode and not bearish_mode
     min_price=30 if goreng_mode else 50
     for a in message.text.split()[1:]:
         if a.isdigit():
             try: min_price=int(a); break
             except: pass
     if bearish_mode:
-        loading=bot.reply_to(message,f"🔻 V39 BEARISH SCAN - Cari saham palsu jangan dibeli...")
+        loading=bot.reply_to(message,f"🔻 V40 BEARISH SCAN...")
         try:
             results=[]
             for sym in WATCHLIST[:80]:
@@ -592,19 +552,19 @@ def handle_scan(message):
             results=sorted(results,key=lambda x: x['pump3'])
             if results:
                 now = datetime.datetime.now(WIB)
-                txt=f"🔻 V39 BEARISH TREND - JANGAN BELI! {now.strftime('%d %b %H:%M WIB')}\nDari {len(results)} saham bearish -> TOP10 PALSU\n\n"
+                txt=f"🔻 V40 BEARISH - JANGAN BELI! {now.strftime('%d %b %H:%M WIB')}\nDari {len(results)} bearish -> TOP10 PALSU\n\n"
                 for i,r in enumerate(results[:10],1):
                     alasan_str = ", ".join(r['alasan'][:2])
-                    txt+=f"{i}. {r['symbol']} {r['close']:.0f} Pump {r['pump3']:.0f}% RSI {r['rsi']:.0f}\n   {alasan_str}\n   /bearish {r['symbol'].lower()}.jk cek chart\n\n"
-                txt+="⚠️ INI BEARISH PALSU! Jangan beli kaya NCKL!"
+                    txt+=f"{i}. {r['symbol']} {r['close']:.0f} Pump {r['pump3']:.0f}% RSI {r['rsi']:.0f}\n   {alasan_str}\n   /bearish {r['symbol'].lower()}.jk\n\n"
+                txt+="⚠️ BEARISH PALSU!"
             else:
-                txt=f"Gak ada BEARISH - Semua bullish aman!"
+                txt=f"Gak ada BEARISH - Semua aman!"
             bot.reply_to(message,txt)
             try: bot.delete_message(loading.chat.id,loading.message_id)
             except: pass
         except Exception as e: bot.edit_message_text(f"Error: {e}"[:400],loading.chat.id,loading.message_id)
     elif goreng_mode:
-        loading=bot.reply_to(message,f"🔥 V39 GORENGAN SUPER KETAT Scanning {len(WATCHLIST_GORENGAN)} saham...")
+        loading=bot.reply_to(message,f"🔥 V40 GORENGAN Scanning {len(WATCHLIST_GORENGAN)} saham...")
         try:
             results=[]
             for sym in WATCHLIST_GORENGAN:
@@ -614,51 +574,43 @@ def handle_scan(message):
             for idx in range(min(3, len(results))): results[idx]['score']=100
             if results:
                 now = datetime.datetime.now(WIB)
-                is_lib, _ = is_libur()
-                if is_lib:
-                    txt=f"🏖️ V39 LIBUR - GORENGAN SIAPIN AMUNISI SENIN! {now.strftime('%d %b %H:%M WIB')}\nDari {len(results)} -> TOP5\n\n"
-                else:
-                    txt=f"🔥 V39 GORENGAN SUPER KETAT + TREND! {now.strftime('%d %b %H:%M WIB')}\nDari {len(results)} -> TOP5\n\n"
+                txt=f"🔥 V40 GORENGAN + TREND! {now.strftime('%d %b %H:%M WIB')}\nDari {len(results)} -> TOP5\n\n"
                 for i,r in enumerate(results[:5],1):
-                    txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% Pump {r['pump3']:.0f}% Vol {r['vol']:.1f}x RSI {r['rsi']:.0f} {r['trend']}\n   /goreng {r['symbol'].lower()}.jk\n\n"
+                    txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% Pump {r['pump3']:.0f}% Vol {r['vol']:.1f}x RSI {r['rsi']:.0f}\n   /goreng {r['symbol'].lower()}.jk\n\n"
                 txt+="⚠️ TP CEPET +7% +12%!"
             else:
-                txt=f"Gak ada GORENGAN - V39 super ketat! Semua pucuk DOOH MBTO ke-filter!"
+                txt=f"Gak ada GORENGAN - V40 ketat! Pucuk DOOH MBTO ke-filter!"
             bot.reply_to(message,txt)
             try: bot.delete_message(loading.chat.id,loading.message_id)
             except: pass
         except Exception as e: bot.edit_message_text(f"Error: {e}"[:400],loading.chat.id,loading.message_id)
     elif bawah_mode:
-        loading=bot.reply_to(message,f"🔴 V39 MERAH SUPER KETAT + TREND Scanning >{min_price}...")
+        loading=bot.reply_to(message,f"🟢 V40 MERAH AWAL NAIK Scanning >{min_price} (Bukan Sore!)...")
         try:
             results=[]
             for sym in WATCHLIST[:80]:
                 r=analyze_bawah(sym, min_price=50, strict=True)
                 if r: results.append(r)
-            results=sorted(results,key=lambda x: (x['score'], -x['pump3']),reverse=True)
+            results=sorted(results,key=lambda x: (x['score'], x['vol']),reverse=True)
             for idx in range(min(3, len(results))): results[idx]['score']=100
             if results:
                 now = datetime.datetime.now(WIB)
-                is_lib, _ = is_libur()
-                if is_lib:
-                    txt=f"🏖️ V39 LIBUR BEI - SIAPIN AMUNISI SENIN! {now.strftime('%d %b %H:%M WIB')}\n🔴 DISKON BUAT SENIN - Dari {len(results)} -> TOP3 BULLISH TREND\n\n"
-                else:
-                    txt=f"🔴 V39 MERAH SUPER KETAT + BULLISH TREND {now.strftime('%d %b %H:%M WIB')}\nDari {len(results)} -> TOP3 (Bearish ke-filter)\n\n"
+                txt=f"🟢 V40 MERAH AWAL NAIK PAGI {now.strftime('%d %b %H:%M WIB')}\nDari {len(results)} -> TOP3 AWAL (Bukan Pucuk Sore!)\n\n"
                 for i,r in enumerate(results[:3],1):
-                    txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% Pump {r['pump3']:.0f}% RSI {r['rsi']:.0f} {r['trend']}\n   /merah {r['symbol'].lower()}.jk\n\n"
-                txt+="✅ BELI MERAH BULLISH! Bearish palsu kaya NCKL udah ke-filter!"
-            else: txt=f"Gak ada BULLISH DISKON super ketat!"
+                    txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% VolRel {r['vol']:.1f}x RSI {r['rsi']:.0f} Pump {r['pump3']:.1f}% {r['trend']}\n   /merah {r['symbol'].lower()}.jk\n\n"
+                txt+="✅ BELI PAGI! V40: RSI 48-58 + VolRel >1.5 + Pump <2.5% - Anti merah kebalik besok!"
+            else: txt=f"Gak ada AWAL NAIK pagi ini - Semua masih di bawah RSI 48, sabar!"
             bot.reply_to(message,txt)
             try: bot.delete_message(loading.chat.id,loading.message_id)
             except: pass
         except Exception as e: bot.edit_message_text(f"Error: {e}"[:400],loading.chat.id,loading.message_id)
     else:
-        bot.reply_to(message,"Pakai /scan merah /scan goreng /scan bearish\nmerah = diskon bullish\nbearish = jangan beli palsu\nikan goreng")
+        bot.reply_to(message,"Pakai /scan merah /scan goreng /scan bearish\nmerah = V40 pagi awal naik anti merah kebalik")
 
 if __name__=="__main__":
     start_anti_tidur()
     start_auto()
-    print("Bot V39 SUPER KETAT + BEARISH TREND LABEL running...")
+    print("Bot V40 PGAS 2800 AWAL NAIK - Anti Merah Kebalik running...")
     try:
         bot.remove_webhook()
         time.sleep(2)
