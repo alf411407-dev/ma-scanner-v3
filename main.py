@@ -1,5 +1,5 @@
 """
-V40.7 BANDAR FIX FINAL - FIX DEFI
+V40.9 BANDAR ANTI PALSU - FIX DEFI
 Perbaikan: Scan PAGI 09:00 RSI 48-58, bukan SORE 15:00 RSI 60
 Dari kode asli V39 yang ngasih tau sore udah bullish besok merah
 """
@@ -72,7 +72,7 @@ start_time=time.time()
 @app.route('/')
 def home():
     uptime=int(time.time()-start_time)
-    return f"Bot V40.7 BANDAR FIX FINAL - Anti Merah Kebalik - Uptime {uptime//3600}h"
+    return f"Bot V40.9 BANDAR ANTI PALSU - Anti Merah Kebalik - Uptime {uptime//3600}h"
 @app.route('/health')
 def health(): return "OK V40.1",200
 @app.route('/ping')
@@ -397,7 +397,7 @@ def analyze_bawah(symbol, min_price=50, strict=True):
 
 
 def analyze_gorengan_rebound(symbol, min_price=20):
-    """V40.7 REBOUND - Gorengan potensi rebound dari bawah"""
+    """V40.9 REBOUND - Gorengan potensi rebound dari bawah"""
     try:
         df,final_sym=get_data_realtime(symbol)
         if df is None: return None
@@ -423,7 +423,7 @@ def analyze_gorengan_rebound(symbol, min_price=20):
         low20=float(close.tail(20).min())
         dist_low=(curr_close-low20)/low20*100 if low20>0 else 100
         
-        # === FILTER REBOUND V40.7 SUPER LONGGAR ===
+        # === FILTER REBOUND V40.9 SUPER LONGGAR ===
         if not (-40 <= pump3 <= 8): return None
         if not (20 <= rsi <= 60): return None
         if vol_ratio < 1.0: return None
@@ -448,47 +448,60 @@ def analyze_gorengan_rebound(symbol, min_price=20):
 
 
 
+
 def analyze_bandar_mode(symbol, min_price=30):
     try:
         df,final_sym=get_data_realtime(symbol)
         if df is None: return None
         df_flat=flatten_df(df.copy()); close=pd.Series(df_flat['Close']).dropna()
+        open_s=pd.Series(df_flat['Open']).dropna() if 'Open' in df_flat.columns else close
         if len(close)<30: return None
-        curr_close=float(close.iloc[-1])
+        curr_close=float(close.iloc[-1]); curr_open=float(open_s.iloc[-1])
         if curr_close < min_price: return None
         ema5=float(calc_ema(close,5).iloc[-1]); ema10=float(calc_ema(close,10).iloc[-1]); ema20=float(calc_ema(close,20).iloc[-1])
-        ema5p=float(calc_ema(close,5).iloc[-2])
+        ema5p=float(calc_ema(close,5).iloc[-2]); ema10p=float(calc_ema(close,10).iloc[-2])
         rsi=float(calc_rsi(close,14).iloc[-1])
+        rsi_p1=float(calc_rsi(close,14).iloc[-2])
         vol=df_flat['Volume'] if 'Volume' in df_flat.columns else pd.Series([0]*len(df_flat))
         if isinstance(vol,pd.DataFrame): vol=vol.iloc[:,0]
-        vol_ma=float(pd.Series(vol).rolling(20).mean().iloc[-1]) if len(vol)>20 else 1
-        vol_now=float(vol.iloc[-1]) if len(vol)>0 else 0
-        vol_ratio=vol_now/vol_ma if vol_ma>0 else 0
+        vol_s=pd.Series(vol).dropna()
+        if len(vol_s)<5: return None
+        vol_ma=float(vol_s.rolling(20).mean().iloc[-1]) if len(vol_s)>20 else 1
+        v1=float(vol_s.iloc[-1]); v2=float(vol_s.iloc[-2]); v3=float(vol_s.iloc[-3])
+        vol_ratio=v1/vol_ma if vol_ma>0 else 0
         c3=float(close.iloc[-4]) if len(close)>=4 else curr_close
         pump3=(curr_close-c3)/c3*100 if c3>0 else 0
         low20=float(close.tail(20).min())
         dist_low=(curr_close-low20)/low20*100 if low20>0 else 100
-        try:
-            v1=float(vol.iloc[-1]); v2=float(vol.iloc[-2]); v3=float(vol.iloc[-3])
-            vol_naik = v1 > v2 > v3 or (v1 > vol_ma and v2 > vol_ma*0.8)
-        except: vol_naik=False
+        # ANTI PALSU FILTER
+        # 1. Vol naik 3 hari berturut
+        vol_naik_3 = v1 > v2 and v2 > v3*0.95 and v1 > vol_ma*1.2
+        # 2. Close > Open (bandar akumulasi, bukan distribusi)
+        bullish_candle = curr_close > curr_open*0.998
+        # 3. EMA5 naik
+        ema5_naik = ema5 > ema5p
+        # 4. RSI naik tapi masih murah
+        rsi_naik = rsi >= rsi_p1*0.97
+        # 5. Harga masih di bawah EMA20 +8% aja
         if curr_close > ema20*1.08: return None
-        if not (32 <= rsi <= 54): return None
-        if not (-12 <= pump3 <= 4.5): return None
-        if dist_low > 10: return None
-        if not (1.4 <= vol_ratio <= 5.0): return None
-        if ema5 < ema5p*0.98: return None
-        score=75
+        if not (33 <= rsi <= 52): return None  # lebih ketat
+        if not (-10 <= pump3 <= 3.5): return None
+        if dist_low > 8: return None  # harus mepet bawah
+        if not (1.3 <= vol_ratio <= 4.0): return None
+        if not vol_naik_3: return None
+        if not bullish_candle: return None
+        if not ema5_naik: return None
+        if not rsi_naik: return None
+        if ema5 < ema10*0.97: return None
+        score=80
         if 38 <= rsi <= 48: score+=10
-        if 1.8 <= vol_ratio <= 3.2: score+=10
-        if -3 <= pump3 <= 2: score+=8
-        if dist_low < 3: score+=7
-        if ema5 > ema10: score+=5
-        if vol_naik: score+=5
+        if 1.5 <= vol_ratio <= 3.0: score+=5
+        if dist_low < 4: score+=5
         if score>100: score=100
-        return {'symbol':symbol.replace('.JK',''), 'close':curr_close, 'score':int(score), 'vol':vol_ratio, 'rsi':rsi, 'pump3':pump3, 'dist_low':dist_low, 'ema5':ema5, 'ema20':ema20, 'vol_naik':vol_naik}
+        return {'symbol':symbol.replace('.JK',''), 'close':curr_close, 'score':int(score), 'vol':vol_ratio, 'rsi':rsi, 'pump3':pump3, 'dist_low':dist_low, 'ema5':ema5, 'ema20':ema20, 'vol_naik':True}
     except:
         return None
+
 
 
 def analyze_bearish(symbol, min_price=50):
@@ -642,16 +655,16 @@ def handle_scan(message):
             try: min_price=int(a); break
             except: pass
     if bandar_mode:
-        loading=bot.reply_to(message,f"🕵️ V40.7 BANDAR Scanning {len(WATCHLIST)} saham...")
+        loading=bot.reply_to(message,f"🕵️ V40.9 BANDAR Scanning {len(WATCHLIST)} saham...")
         try:
             results=[]
-            for sym in WATCHLIST[:100]:
+            for sym in WATCHLIST[:150]:
                 r=analyze_bandar_mode(sym, min_price=min_price)
                 if r: results.append(r)
             results=sorted(results,key=lambda x: (x['score'], x['vol']),reverse=True)
             if results:
                 now = datetime.datetime.now(WIB)
-                txt=f"🕵️ V40.7 NGEKOR BANDAR {now.strftime('%d %b %H:%M WIB')}\nBandar akumulasi di bawah (bukan pucuk 135!)\n\n"
+                txt=f"🕵️ V40.9 BANDAR ASLI 90% ANTI PALSU {now.strftime('%d %b %H:%M WIB')}\nBandar AKUM 3 HARI + Candle Hijau (Anti Palsu!)\n\n"
                 for i,r in enumerate(results[:10],1):
                     vol_tag="🔥 VOL NAIK" if r['vol_naik'] else ""
                     txt+=f"{i}. {r['symbol']} {r['close']:.0f} {r['score']}% RSI {r['rsi']:.0f} Vol {r['vol']:.1f}x Low+{r['dist_low']:.1f}% {vol_tag}\n   Pump {r['pump3']:.1f}% EMA5 {r['ema5']:.0f}>EMA20 {r['ema20']:.0f}\n   /bandar {r['symbol'].lower()}.jk\n\n"
@@ -685,7 +698,7 @@ def handle_scan(message):
             except: pass
         except Exception as e: bot.edit_message_text(f"Error: {e}"[:400],loading.chat.id,loading.message_id)
     elif goreng_mode:
-        loading=bot.reply_to(message,f"🔥 V40.7 REBOUND+GORENGAN Scanning {len(WATCHLIST_GORENGAN)} saham...")
+        loading=bot.reply_to(message,f"🔥 V40.9 REBOUND+GORENGAN Scanning {len(WATCHLIST_GORENGAN)} saham...")
         try:
             results_ara=[]
             results_rebound=[]
@@ -698,7 +711,7 @@ def handle_scan(message):
             results_rebound=sorted(results_rebound,key=lambda x: (x['score'], x['vol']),reverse=True)
             now = datetime.datetime.now(WIB)
             if results_ara or results_rebound:
-                txt=f"🔥 V40.7 GORENGAN REBOUND {now.strftime('%d %b %H:%M WIB')}\n"
+                txt=f"🔥 V40.9 GORENGAN REBOUND {now.strftime('%d %b %H:%M WIB')}\n"
                 if results_rebound:
                     txt+=f"\n💚 REBOUND POTENSI ({len(results_rebound)} saham) - DEFI dkk:\n"
                     for i,r in enumerate(results_rebound[:10],1):
@@ -740,7 +753,7 @@ def handle_scan(message):
 if __name__=="__main__":
     start_anti_tidur()
     start_auto()
-    print("Bot V40.7 BANDAR FIX FINAL - Anti Merah Kebalik running...")
+    print("Bot V40.9 BANDAR ANTI PALSU - Anti Merah Kebalik running...")
     try:
         bot.remove_webhook()
         time.sleep(2)
